@@ -33,8 +33,7 @@ Tested with:
 Run this in the root of your Java project:
 
 ```sh
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/julien-may/zero-jdk/HEAD/build)"
-chmod +x ./build
+curl -fsSL https://raw.githubusercontent.com/julien-may/zero-jdk/HEAD/build -o build && chmod +x build
 ```
 
 You now have a local `./build` script ready to use.
