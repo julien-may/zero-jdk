@@ -132,7 +132,7 @@ setup_jdk() {
 }
 
 setup_maven_wrapper() {
-  echo "Installing Maven Wrapper..."
+  printf "Installing Maven Wrapper... "
 
   wrapper_url="https://repo1.maven.org/maven2/org/apache/maven/wrapper/maven-wrapper-distribution/${MAVEN_WRAPPER_VERSION}/maven-wrapper-distribution-${MAVEN_WRAPPER_VERSION}-bin.zip"
   distribution_url="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/${MAVEN_VERSION}/apache-maven-${MAVEN_VERSION}-bin.zip"
@@ -152,11 +152,12 @@ wrapperUrl=$wrapper_url
 EOF
 
   rm -rf "$temp_dir"
-  echo "Maven Wrapper installed."
+
+  echo "done"
 }
 
 setup_gradle_wrapper() {
-  echo "Installing Gradle Wrapper..."
+  printf "Installing Gradle Wrapper... "
   mkdir -p gradle/wrapper
 
   curl -fsSL -o gradle/wrapper/gradle-wrapper.jar "https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar"
@@ -169,7 +170,9 @@ zipStoreBase=GRADLE_USER_HOME
 zipStorePath=wrapper/dists
 EOF
 
-  echo "Gradle Wrapper installed."
+  echo -e "4\n1\n\n" | java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain init --overwrite > /dev/zero
+
+  echo "done"
 }
 
 run_build_tool() {
@@ -314,7 +317,7 @@ EOF
       done
 
       if ! is_jdk_available; then
-        printf "Initializing... "
+        printf "Initializing JDK... "
         mkdir -p .jdk
 
         if [ ! -f "$CONFIG_FILE" ]; then
