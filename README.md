@@ -2,6 +2,8 @@
 
 Zero JDK is a lightweight build bootstrapper for Java projects. It ensures that the required JDK version is downloaded and used automatically, without requiring a globally installed Java runtime. It also supports Maven and Gradle wrapper setup with simple commands.
 
+![Image](https://github.com/user-attachments/assets/0c782a11-94d0-49a5-aa3d-aca908d5147f)
+
 ## Motivation
 Setting up a new Java project often requires preinstalled tools such as:
 
