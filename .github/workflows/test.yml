@@ -1,0 +1,16 @@
+name: Test ZeroJDK
+
+on: [push, pull_request]
+
+jobs:
+  test-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: test/run-tests.sh
+
+  test-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: test/run-tests.sh

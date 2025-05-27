@@ -1,0 +1,360 @@
+#!/bin/sh
+# ----------------------------------------------------------------------------
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#    https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+# ----------------------------------------------------------------------------
+
+set -e
+
+readonly CONFIG_FILE=".jdk/config.properties"
+readonly JDK_DIR=".jdk/releases"
+readonly JDK_ARCHIVE_DIR=".jdk/downloads"
+readonly ORIGINAL_JAVA_HOME="${JAVA_HOME:-}"
+readonly ORIGINAL_PATH="$PATH"
+
+readonly MAVEN_WRAPPER_VERSION="3.3.2"
+readonly MAVEN_VERSION="3.9.9"
+
+readonly GRADLE_VERSION="8.14.1"
+
+restore_env() {
+  if [ -n "$ORIGINAL_JAVA_HOME" ]; then
+    export JAVA_HOME="$ORIGINAL_JAVA_HOME"
+  else
+    unset JAVA_HOME 2>/dev/null || true
+  fi
+  export PATH="$ORIGINAL_PATH"
+}
+
+trap restore_env EXIT INT
+
+get_java_home_candidate() {
+  jdk_folder="$1"
+  if [ -d "$jdk_folder/Contents/Home" ]; then
+    echo "$jdk_folder/Contents/Home"
+  else
+    echo "$jdk_folder"
+  fi
+}
+
+export_java_home() {
+  jdk_folder="$1"
+
+  if [ -z "$jdk_folder" ]; then
+    download_url=$(sed -n 's/^url=//p' "$CONFIG_FILE" | tr -d '\r')
+    archive_name=$(basename "$download_url")
+    jdk_folder="${JDK_DIR}/$(basename "$download_url" .tar.gz)"
+  fi
+
+  java_home_candidate=$(get_java_home_candidate "$jdk_folder")
+  jdk_bin="$java_home_candidate/bin/java"
+
+  if [ ! -x "$jdk_bin" ]; then
+    echo "Error: Java binary not found at $jdk_bin" >&2
+    exit 1
+  fi
+
+  JAVA_HOME=$(cd "$java_home_candidate" && pwd) || {
+    echo "Error: Failed to resolve absolute JAVA_HOME path" >&2
+    exit 1
+  }
+  export JAVA_HOME
+  export PATH="$JAVA_HOME/bin:$PATH"
+}
+
+is_jdk_available() {
+  [ -f "$CONFIG_FILE" ] || return 1
+  download_url=$(sed -n 's/^url=//p' "$CONFIG_FILE" | tr -d '\r')
+  [ -n "$download_url" ] || return 1
+
+  archive_name=$(basename "$download_url")
+  jdk_folder="${JDK_DIR}/$(basename "$download_url" .tar.gz)"
+
+  java_home_candidate=$(get_java_home_candidate "$jdk_folder")
+  [ -d "$jdk_folder" ] && [ -x "$java_home_candidate/bin/java" ]
+}
+
+setup_jdk() {
+  download_url=$(sed -n 's/^url=//p' "$CONFIG_FILE" | tr -d '\r')
+  archive_name=$(basename "$download_url")
+  archive_path="${JDK_ARCHIVE_DIR}/${archive_name}"
+  jdk_folder="${JDK_DIR}/$(basename "$download_url" .tar.gz)"
+
+  case "$download_url" in
+    https://cdn.azul.com/zulu/* | \
+    https://corretto.aws/* | \
+    https://download.java.net/* | \
+    https://download.oracle.com/* | \
+    https://github.com/adoptium/* | \
+    https://github.com/graalvm/* | \
+    https://github.com/bell-sw/* )
+      ;;
+    *)
+      if [ "$force" != "yes" ]; then
+        echo "Error: Untrusted JDK download source: $download_url" >&2
+        echo "Use --force to override."
+        exit 1
+      fi
+      ;;
+  esac
+
+  mkdir -p "$jdk_folder" "$JDK_ARCHIVE_DIR"
+
+  if ! curl -fsSL --max-time 300 --retry 3 -o "$archive_path" "$download_url"; then
+    echo "Error: Failed to download JDK from $download_url" >&2
+    exit 1
+  fi
+
+  if ! file "$archive_path" | grep -q "gzip compressed"; then
+    echo "Error: Downloaded file is not a valid gzip archive" >&2
+    rm -f "$archive_path"
+    exit 1
+  fi
+
+  if ! tar -xzf "$archive_path" -C "$jdk_folder" --strip-components=1; then
+    echo "Error: Failed to extract archive" >&2
+    exit 1
+  fi
+}
+
+setup_maven_wrapper() {
+  echo "Installing Maven Wrapper..."
+
+  wrapper_url="https://repo1.maven.org/maven2/org/apache/maven/wrapper/maven-wrapper-distribution/${MAVEN_WRAPPER_VERSION}/maven-wrapper-distribution-${MAVEN_WRAPPER_VERSION}-bin.zip"
+  distribution_url="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/${MAVEN_VERSION}/apache-maven-${MAVEN_VERSION}-bin.zip"
+
+  temp_dir=$(mktemp -d)
+  curl -fsSL -o "$temp_dir/wrapper.zip" "$wrapper_url"
+  unzip -q "$temp_dir/wrapper.zip" -d "$temp_dir"
+
+  mkdir -p .mvn/wrapper
+  cp "$temp_dir/mvnw" ./
+  cp "$temp_dir/mvnw.cmd" ./
+  cp "$temp_dir/.mvn/wrapper/maven-wrapper.jar" .mvn/wrapper/
+
+  cat > .mvn/wrapper/maven-wrapper.properties <<EOF
+distributionUrl=$distribution_url
+wrapperUrl=$wrapper_url
+EOF
+
+  rm -rf "$temp_dir"
+  echo "Maven Wrapper installed."
+}
+
+setup_gradle_wrapper() {
+  echo "Installing Gradle Wrapper..."
+  mkdir -p gradle/wrapper
+
+  curl -fsSL -o gradle/wrapper/gradle-wrapper.jar "https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar"
+
+  cat > gradle/wrapper/gradle-wrapper.properties <<EOF
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+EOF
+
+  echo "Gradle Wrapper installed."
+}
+
+run_build_tool() {
+  if [ -x "./mvnw" ]; then
+    ./mvnw "$@"
+  elif [ -x "./gradlew" ]; then
+    ./gradlew "$@"
+  else
+    echo "No mvnw or gradlew found. Nothing to run."
+    return 1
+  fi
+}
+
+detect_platform() {
+  os="$(uname | tr '[:upper:]' '[:lower:]')"
+  case "$os" in
+    darwin) os="mac" ;;
+    linux)  os="linux" ;;
+    *)
+      echo "Error: Unsupported OS: $os" >&2
+      return 1
+      ;;
+  esac
+
+  arch="$(uname -m)"
+  case "$arch" in
+    x86_64) arch="x64" ;;
+    aarch64|arm64) arch="aarch64" ;;
+    arm*) arch="arm" ;;
+    *)
+      echo "Error: Unsupported architecture: $arch" >&2
+      return 1
+      ;;
+  esac
+
+  echo "${os}-${arch}"
+}
+
+get_default_jdk_url() {
+  case "$1" in
+    mac-aarch64)
+      echo "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.7%2B6/OpenJDK21U-jdk_aarch64_mac_hotspot_21.0.7_6.tar.gz"
+      ;;
+    mac-x64)
+      echo "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.7%2B6/OpenJDK21U-jdk_x64_mac_hotspot_21.0.7_6.tar.gz"
+      ;;
+    linux-x64)
+      echo "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.7%2B6/OpenJDK21U-jdk_x64_linux_hotspot_21.0.7_6.tar.gz"
+      ;;
+    linux-aarch64)
+      echo "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.7%2B6/OpenJDK21U-jdk_aarch64_linux_hotspot_21.0.7_6.tar.gz"
+      ;;
+    *)
+      echo "Error: Unsupported OS/ARCH combination: $1" >&2
+      return 1
+      ;;
+  esac
+}
+
+main() {
+  script_command="$1"
+  shift || true
+
+  case "$script_command" in
+    ""|help|--help|-h)
+      case "$1" in
+        info)
+          cat << 'EOF'
+info: Show which JDK is currently configured and used
+
+Usage:
+  ./build info
+EOF
+          ;;
+        init)
+          cat << 'EOF'
+init: Initialize .jdk/config.properties and download JDK
+
+Commands:
+  mvnw            Setup Maven Wrapper (Apache Maven + wrapper JAR)
+  gradlew         Setup Gradle Wrapper (Gradle wrapper JAR and properties)
+
+Options:
+  -f, --force      Bypass trusted host check (use only if you trust the source)
+EOF
+          ;;
+        run)
+          cat << 'EOF'
+run: Run Maven or Gradle using the configured JDK
+
+Usage:
+  ./build run [args...]
+EOF
+          ;;
+        *)
+          cat << 'EOF'
+Usage:
+  ./build run [args...]          Run Maven or Gradle with arguments
+  ./build init [args...]         Initialize JDK
+  ./build info                   Show current JDK path and version
+  ./build help [command]         Show help for a command
+EOF
+          ;;
+      esac
+      exit 0
+      ;;
+
+    info)
+      if ! is_jdk_available; then
+        printf "Changes detected. Updating... "
+        setup_jdk
+        echo "done"
+      fi
+
+      export_java_home
+
+      echo
+      echo "JDK Information"
+      echo "---------------"
+      echo "JAVA_HOME: $JAVA_HOME"
+      echo
+      if command -v java >/dev/null 2>&1; then
+        java -version 2>&1
+      else
+        echo "  java not found in PATH"
+      fi
+      exit 0
+      ;;
+
+    init)
+      force="no"
+      init_mvnw="no"
+      init_gradlew="no"
+      while [ "$1" ]; do
+        case "$1" in
+          -f|--force) force="yes" ;;
+          mvnw) init_mvnw="yes" ;;
+          gradlew) init_gradlew="yes" ;;
+          *) echo "Unknown option for init: $1" >&2; exit 1 ;;
+        esac
+        shift
+      done
+
+      if ! is_jdk_available; then
+        printf "Initializing... "
+        mkdir -p .jdk
+
+        if [ ! -f "$CONFIG_FILE" ]; then
+          platform=$(detect_platform) || exit 1
+          jdk_url=$(get_default_jdk_url "$platform") || exit 1
+
+          if ! echo "url=$jdk_url" > "$CONFIG_FILE"; then
+            echo "Error: Failed to create $CONFIG_FILE" >&2
+            exit 1
+          fi
+        fi
+
+        setup_jdk
+        echo "done"
+      fi
+
+      [ "$init_mvnw" = "yes" ] && setup_maven_wrapper
+      [ "$init_gradlew" = "yes" ] && setup_gradle_wrapper
+
+      exit 0
+      ;;
+
+    run)
+      if ! is_jdk_available; then
+        printf "Changes detected. Updating... "
+        setup_jdk
+        echo "done"
+      fi
+
+      export_java_home
+
+      run_build_tool "$@"
+      ;;
+
+    *)
+      echo "Error: Unknown command: $script_command" >&2
+      echo "Try './build help' for usage." >&2
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"
