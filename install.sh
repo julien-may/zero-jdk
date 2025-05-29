@@ -4,7 +4,7 @@ readonly ERROR='\033[0;31m'
 readonly BOLD='\033[1m'
 readonly RESET='\033[0m'
 
-target="build2"
+target="build"
 
 while [[ -e "$target" || -z "$target" ]]; do
   if [ ! -z "$target" ]; then
