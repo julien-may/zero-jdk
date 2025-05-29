@@ -13,5 +13,6 @@ export default defineConfig({
     socialLinks: [
       { icon: 'github', link: 'https://github.com/julien-may/zero-jdk' }
     ]
-  }
+  },
+  base: '/zero-jdk/'
 })
