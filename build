@@ -52,15 +52,7 @@ get_java_home_candidate() {
 }
 
 export_java_home() {
-  jdk_folder="$1"
-
-  if [ -z "$jdk_folder" ]; then
-    download_url=$(sed -n 's/^url=//p' "$CONFIG_FILE" | tr -d '\r')
-    archive_name=$(basename "$download_url")
-    jdk_folder="${JDK_DIR}/$(basename "$download_url" .tar.gz)"
-  fi
-
-  java_home_candidate=$(get_java_home_candidate "$jdk_folder")
+  java_home_candidate=$(realpath ".jdk/current")
   jdk_bin="$java_home_candidate/bin/java"
 
   if [ ! -x "$jdk_bin" ]; then
@@ -68,11 +60,7 @@ export_java_home() {
     exit 1
   fi
 
-  JAVA_HOME=$(cd "$java_home_candidate" && pwd) || {
-    echo "Error: Failed to resolve absolute JAVA_HOME path" >&2
-    exit 1
-  }
-  export JAVA_HOME
+  export JAVA_HOME="$java_home_candidate"
   export PATH="$JAVA_HOME/bin:$PATH"
 }
 
@@ -129,6 +117,116 @@ setup_jdk() {
     echo "Error: Failed to extract archive" >&2
     exit 1
   fi
+
+  local java_home_candidate=$(get_java_home_candidate "$jdk_folder")
+  local relative_target="${java_home_candidate#".jdk/"}"
+
+  ln -sfn "$relative_target" ".jdk/current"
+}
+
+install_shell_integration() {
+  local shell_name
+  shell_name=$(basename "$SHELL")
+  local target_hook="$HOME/.zero-jdk/java-home.sh"
+  local config_file=""
+  mkdir -p "$HOME/.zero-jdk"
+
+  case "$shell_name" in
+    zsh)
+      cat > "$target_hook" <<'EOF'
+autoload -U add-zsh-hook
+
+_clean_path_of_jdk_bin() {
+  local p="$PATH"
+  echo "$p" | awk -v RS=: -v ORS=: '!/\/\.jdk\/[^\/]+\/bin/' | sed 's/:$//'
+}
+
+set_java_home_from_jdk_folder() {
+  local dir="$PWD"
+  local resolved=""
+  while [ "$dir" != "/" ]; do
+    if [ -L "$dir/.jdk/current" ]; then
+      resolved=$(realpath "$dir/.jdk/current" 2>/dev/null)
+      break
+    fi
+    dir=$(dirname "$dir")
+  done
+  if [ -n "$resolved" ] && [ -d "$resolved" ]; then
+    if [ "$JAVA_HOME" != "$resolved" ]; then
+      export JAVA_HOME="$resolved"
+      export PATH="$JAVA_HOME/bin:$(_clean_path_of_jdk_bin)"
+      echo "\u2714 JAVA_HOME set to $JAVA_HOME"
+    fi
+  else
+    if [ -n "$JAVA_HOME" ]; then
+      export PATH="$(_clean_path_of_jdk_bin)"
+      unset JAVA_HOME
+      echo "\u2714 JAVA_HOME unset"
+    fi
+  fi
+}
+add-zsh-hook chpwd set_java_home_from_jdk_folder
+set_java_home_from_jdk_folder
+EOF
+      config_file="$HOME/.zshrc"
+      ;;
+
+    bash)
+      cat > "$target_hook" <<'EOF'
+if [ -n "$_JAVA_HOME_CD_WRAPPED" ]; then return; fi
+export _JAVA_HOME_CD_WRAPPED=1
+
+_clean_path_of_jdk_bin() {
+  local p="$PATH"
+  echo "$p" | awk -v RS=: -v ORS=: '!/\/\.jdk\/[^\/]+\/bin/' | sed 's/:$//'
+}
+
+set_java_home_from_jdk_folder() {
+  local dir="$PWD"
+  local resolved=""
+  while [ "$dir" != "/" ]; do
+    if [ -L "$dir/.jdk/current" ]; then
+      resolved=$(realpath "$dir/.jdk/current" 2>/dev/null)
+      break
+    fi
+    dir=$(dirname "$dir")
+  done
+  if [ -n "$resolved" ] && [ -d "$resolved" ]; then
+    if [ "$JAVA_HOME" != "$resolved" ]; then
+      export JAVA_HOME="$resolved"
+      export PATH="$JAVA_HOME/bin:$(_clean_path_of_jdk_bin)"
+      echo "\u2714 JAVA_HOME set to $JAVA_HOME"
+    fi
+  else
+    if [ -n "$JAVA_HOME" ]; then
+      export PATH="$(_clean_path_of_jdk_bin)"
+      unset JAVA_HOME
+      echo "\u2714 JAVA_HOME unset"
+    fi
+  fi
+}
+
+cd() {
+  builtin cd "$@" && set_java_home_from_jdk_folder
+}
+set_java_home_from_jdk_folder
+EOF
+      config_file="$HOME/.bashrc"
+      ;;
+
+    *)
+      echo "Unsupported shell: $shell_name"
+      echo "   Shell integration was not installed."
+      return 0
+      ;;
+  esac
+
+  local marker="[ -f \"$HOME/.zero-jdk/java-home.sh\" ] && source \"$HOME/.zero-jdk/java-home.sh\""
+  if ! grep -Fq "$marker" "$config_file"; then
+    echo "" >> "$config_file"
+    echo "# Load zero-jdk shell integration" >> "$config_file"
+    echo "$marker" >> "$config_file"
+  fi
 }
 
 setup_maven_wrapper() {
@@ -173,17 +271,6 @@ EOF
   echo -e "4\n1\n\n" | java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain init --overwrite > /dev/zero
 
   echo "done"
-}
-
-run_build_tool() {
-  if [ -x "./mvnw" ]; then
-    ./mvnw "$@"
-  elif [ -x "./gradlew" ]; then
-    ./gradlew "$@"
-  else
-    echo "No mvnw or gradlew found. Nothing to run."
-    return 1
-  fi
 }
 
 detect_platform() {
@@ -259,19 +346,11 @@ Options:
   -f, --force      Bypass trusted host check (use only if you trust the source)
 EOF
           ;;
-        run)
-          cat << 'EOF'
-run: Run Maven or Gradle using the configured JDK
-
-Usage:
-  ./build run [args...]
-EOF
-          ;;
         *)
           cat << 'EOF'
 Usage:
-  ./build run [args...]          Run Maven or Gradle with arguments
   ./build init [args...]         Initialize JDK
+  ./build env                    Set environment
   ./build info                   Show current JDK path and version
   ./build help [command]         Show help for a command
 EOF
@@ -299,6 +378,23 @@ EOF
       else
         echo "  java not found in PATH"
       fi
+      exit 0
+      ;;
+
+    env)
+      if ! is_jdk_available; then
+        printf "Changes detected. Updating... "
+        setup_jdk
+        echo "done"
+      fi
+      export_java_home
+
+      echo "export JAVA_HOME=\"$JAVA_HOME\""
+      echo "export PATH=\"$JAVA_HOME/bin:\$PATH\""
+      echo
+      echo "# To activate this JDK in your current shell, run:"
+      echo "#   eval \"\$(./build env)\""
+
       exit 0
       ;;
 
@@ -337,19 +433,9 @@ EOF
       [ "$init_mvnw" = "yes" ] && setup_maven_wrapper
       [ "$init_gradlew" = "yes" ] && setup_gradle_wrapper
 
+      install_shell_integration
+
       exit 0
-      ;;
-
-    run)
-      if ! is_jdk_available; then
-        printf "Changes detected. Updating... "
-        setup_jdk
-        echo "done"
-      fi
-
-      export_java_home
-
-      run_build_tool "$@"
       ;;
 
     *)
