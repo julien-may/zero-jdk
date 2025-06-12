@@ -21,14 +21,15 @@
 set -e
 
 readonly CONFIG_FILE=".jdk/config.properties"
-readonly JDK_DIR=".jdk/releases"
-readonly JDK_ARCHIVE_DIR=".jdk/downloads"
+readonly GLOBAL_JDK_BASE="$HOME/.jdk"
 readonly ORIGINAL_JAVA_HOME="${JAVA_HOME:-}"
 readonly ORIGINAL_PATH="$PATH"
 
+JDK_DIR=".jdk/releases"
+JDK_ARCHIVE_DIR=".jdk/downloads"
+
 readonly MAVEN_WRAPPER_VERSION="3.3.2"
 readonly MAVEN_VERSION="3.9.9"
-
 readonly GRADLE_VERSION="8.14.1"
 
 restore_env() {
@@ -52,7 +53,13 @@ get_java_home_candidate() {
 }
 
 export_java_home() {
-  java_home_candidate=$(realpath ".jdk/current")
+  local base_dir
+  base_dir=$(resolve_jdk_base_dir) || {
+    echo "Error: No JDK installation found" >&2
+    exit 1
+  }
+
+  java_home_candidate=$(realpath "$base_dir/current")
   jdk_bin="$java_home_candidate/bin/java"
 
   if [ ! -x "$jdk_bin" ]; then
@@ -64,23 +71,50 @@ export_java_home() {
   export PATH="$JAVA_HOME/bin:$PATH"
 }
 
+resolve_jdk_base_dir() {
+  resolve_local_jdk_base_dir || resolve_global_jdk_base_dir
+}
+
+resolve_local_jdk_base_dir() {
+  local dir="$PWD"
+  while [ "$dir" != "/" ]; do
+    if [ -L "$dir/.jdk/current" ]; then
+      # Do not match global config under home dir (e.g. ~/project == $HOME/project)
+      if [ "$dir" != "$HOME" ]; then
+        echo "$dir/.jdk"
+        return 0
+      fi
+    fi
+    dir=$(dirname "$dir")
+  done
+  return 1
+}
+
+resolve_global_jdk_base_dir() {
+  if [ -L "$HOME/.jdk/current" ]; then
+    echo "$HOME/.jdk"
+    return 0
+  fi
+
+  return 1
+}
+
 is_jdk_available() {
-  [ -f "$CONFIG_FILE" ] || return 1
-  download_url=$(sed -n 's/^url=//p' "$CONFIG_FILE" | tr -d '\r')
-  [ -n "$download_url" ] || return 1
+  resolve_jdk_base_dir >/dev/null
+}
 
-  archive_name=$(basename "$download_url")
-  jdk_folder="${JDK_DIR}/$(basename "$download_url" .tar.gz)"
-
-  java_home_candidate=$(get_java_home_candidate "$jdk_folder")
-  [ -d "$jdk_folder" ] && [ -x "$java_home_candidate/bin/java" ]
+is_local_jdk_available() {
+  resolve_local_jdk_base_dir >/dev/null
 }
 
 setup_jdk() {
-  download_url=$(sed -n 's/^url=//p' "$CONFIG_FILE" | tr -d '\r')
+  download_url=$(sed -n 's/^url=//p' "$CONFIG_FILE" | tr -d '')
   archive_name=$(basename "$download_url")
-  archive_path="${JDK_ARCHIVE_DIR}/${archive_name}"
-  jdk_folder="${JDK_DIR}/$(basename "$download_url" .tar.gz)"
+
+  global_jdk_dir="$GLOBAL_JDK_BASE/releases"
+  global_archive_dir="$GLOBAL_JDK_BASE/downloads"
+  jdk_folder="${global_jdk_dir}/$(basename "$download_url" .tar.gz)"
+  archive_path="${global_archive_dir}/${archive_name}"
 
   case "$download_url" in
     https://cdn.azul.com/zulu/* | \
@@ -100,11 +134,13 @@ setup_jdk() {
       ;;
   esac
 
-  mkdir -p "$jdk_folder" "$JDK_ARCHIVE_DIR"
+  mkdir -p "$jdk_folder" "$global_archive_dir"
 
-  if ! curl -fsSL --max-time 300 --retry 3 -o "$archive_path" "$download_url"; then
-    echo "Error: Failed to download JDK from $download_url" >&2
-    exit 1
+  if [ ! -f "$archive_path" ]; then
+    if ! curl -fsSL --max-time 300 --retry 3 -o "$archive_path" "$download_url"; then
+      echo "Error: Failed to download JDK from $download_url" >&2
+      exit 1
+    fi
   fi
 
   if ! file "$archive_path" | grep -q "gzip compressed"; then
@@ -113,15 +149,31 @@ setup_jdk() {
     exit 1
   fi
 
-  if ! tar -xzf "$archive_path" -C "$jdk_folder" --strip-components=1; then
-    echo "Error: Failed to extract archive" >&2
-    exit 1
+  if [ ! -x "$jdk_folder/bin/java" ]; then
+    if ! tar -xzf "$archive_path" -C "$jdk_folder" --strip-components=1; then
+      echo "Error: Failed to extract archive" >&2
+      exit 1
+    fi
   fi
 
   local java_home_candidate=$(get_java_home_candidate "$jdk_folder")
-  local relative_target="${java_home_candidate#".jdk/"}"
 
-  ln -sfn "$relative_target" ".jdk/current"
+  # Local Link
+  ln -sfn "$(realpath "$java_home_candidate")" ".jdk/current"
+
+  # Global Link if not already exists
+  if [ ! -L "$HOME/.jdk/current" ]; then
+    ln -sfn "${java_home_candidate#$HOME/.jdk/}" "$HOME/.jdk/current"
+  fi
+}
+
+is_jdk_link_up_to_date() {
+  [ -f "$CONFIG_FILE" ] || return 1
+  download_url=$(sed -n 's/^url=//p' "$CONFIG_FILE" | tr -d '')
+  jdk_folder="${GLOBAL_JDK_BASE}/releases/$(basename "$download_url" .tar.gz)"
+  expected_java_home=$(get_java_home_candidate "$jdk_folder")
+  linked_path=$(realpath .jdk/current 2>/dev/null || true)
+  [ "$linked_path" = "$expected_java_home" ]
 }
 
 install_shell_integration() {
@@ -144,6 +196,7 @@ _clean_path_of_jdk_bin() {
 set_java_home_from_jdk_folder() {
   local dir="$PWD"
   local resolved=""
+
   while [ "$dir" != "/" ]; do
     if [ -L "$dir/.jdk/current" ]; then
       resolved=$(realpath "$dir/.jdk/current" 2>/dev/null)
@@ -151,17 +204,20 @@ set_java_home_from_jdk_folder() {
     fi
     dir=$(dirname "$dir")
   done
+
+  if [ -z "$resolved" ] && [ -L "$HOME/.jdk/current" ]; then
+    resolved=$(realpath "$HOME/.jdk/current" 2>/dev/null)
+  fi
+
   if [ -n "$resolved" ] && [ -d "$resolved" ]; then
     if [ "$JAVA_HOME" != "$resolved" ]; then
       export JAVA_HOME="$resolved"
       export PATH="$JAVA_HOME/bin:$(_clean_path_of_jdk_bin)"
-      echo "\u2714 JAVA_HOME set to $JAVA_HOME"
     fi
   else
     if [ -n "$JAVA_HOME" ]; then
       export PATH="$(_clean_path_of_jdk_bin)"
       unset JAVA_HOME
-      echo "\u2714 JAVA_HOME unset"
     fi
   fi
 }
@@ -184,6 +240,7 @@ _clean_path_of_jdk_bin() {
 set_java_home_from_jdk_folder() {
   local dir="$PWD"
   local resolved=""
+
   while [ "$dir" != "/" ]; do
     if [ -L "$dir/.jdk/current" ]; then
       resolved=$(realpath "$dir/.jdk/current" 2>/dev/null)
@@ -191,17 +248,20 @@ set_java_home_from_jdk_folder() {
     fi
     dir=$(dirname "$dir")
   done
+
+  if [ -z "$resolved" ] && [ -L "$HOME/.jdk/current" ]; then
+    resolved=$(realpath "$HOME/.jdk/current" 2>/dev/null)
+  fi
+
   if [ -n "$resolved" ] && [ -d "$resolved" ]; then
     if [ "$JAVA_HOME" != "$resolved" ]; then
       export JAVA_HOME="$resolved"
       export PATH="$JAVA_HOME/bin:$(_clean_path_of_jdk_bin)"
-      echo "\u2714 JAVA_HOME set to $JAVA_HOME"
     fi
   else
     if [ -n "$JAVA_HOME" ]; then
       export PATH="$(_clean_path_of_jdk_bin)"
       unset JAVA_HOME
-      echo "\u2714 JAVA_HOME unset"
     fi
   fi
 }
@@ -319,6 +379,16 @@ get_default_jdk_url() {
   esac
 }
 
+print_env_instruction() {
+  export_java_home
+
+  echo "export JAVA_HOME=\"$JAVA_HOME\""
+  echo "export PATH=\"$JAVA_HOME/bin:\$PATH\""
+  echo
+  echo "# To activate this JDK in your current shell, run:"
+  echo "#   eval \"\$(./build env)\""
+}
+
 main() {
   script_command="$1"
   shift || true
@@ -361,9 +431,8 @@ EOF
 
     info)
       if ! is_jdk_available; then
-        printf "Changes detected. Updating... "
-        setup_jdk
-        echo "done"
+        echo "Not initialized. Run ./build init to initialize"
+        exit 1
       fi
 
       export_java_home
@@ -383,17 +452,11 @@ EOF
 
     env)
       if ! is_jdk_available; then
-        printf "Changes detected. Updating... "
-        setup_jdk
-        echo "done"
+        echo "Not initialized. Run ./build init to initialize"
+        exit 1
       fi
-      export_java_home
 
-      echo "export JAVA_HOME=\"$JAVA_HOME\""
-      echo "export PATH=\"$JAVA_HOME/bin:\$PATH\""
-      echo
-      echo "# To activate this JDK in your current shell, run:"
-      echo "#   eval \"\$(./build env)\""
+      print_env_instruction
 
       exit 0
       ;;
@@ -412,7 +475,7 @@ EOF
         shift
       done
 
-      if ! is_jdk_available; then
+      if ! is_local_jdk_available; then
         printf "Initializing JDK... "
         mkdir -p .jdk
 
@@ -428,16 +491,21 @@ EOF
 
         setup_jdk
         echo "done"
+      elif ! is_jdk_link_up_to_date; then
+        printf "Changing JDK... "
+        setup_jdk
+        echo "done"
+
+        echo ""
+        print_env_instruction
       fi
 
       [ "$init_mvnw" = "yes" ] && setup_maven_wrapper
       [ "$init_gradlew" = "yes" ] && setup_gradle_wrapper
 
       install_shell_integration
-
       exit 0
       ;;
-
     *)
       echo "Error: Unknown command: $script_command" >&2
       echo "Try './build help' for usage." >&2
