@@ -1,0 +1,24 @@
+[
+  {
+    "name": "dev.zerojdk.commands.ListCommand$JdkVersion",
+    "allPublicConstructors": true,
+    "allPublicMethods": true,
+    "allPublicFields": true
+  },
+  { "name": "java.lang.Runtime$Version",
+    "allPublicConstructors": true },
+  { "name": "dev.zerojdk.commands.ListCommand$OperatingSystemDeserializer",
+    "allPublicConstructors": true },
+  { "name": "dev.zerojdk.commands.ListCommand$ProcessorArchitectureDeserializer",
+    "allPublicConstructors": true },
+  { "name": "dev.zerojdk.commands.ListCommand$RuntimeVersionDeserializer",
+    "allPublicConstructors": true },
+  { "name": "dev.zerojdk.commands.OperatingSystem", "allPublicMethods": true },
+  { "name": "dev.zerojdk.commands.ProcessorArchitecture", "allPublicMethods": true },
+  {
+    "name": "dev.zerojdk.commands.SyncCommand$IndexEntry",
+    "allPublicConstructors": true,
+    "allPublicMethods": true,
+    "allPublicFields": true
+  }
+]
