@@ -1,5 +1,8 @@
 name: release.yml
-on: [push, pull_request]
+on: [push]
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -60,16 +63,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-
-      - name: Debug
-        run: |
-          tree artifacts
-
-#      - name: Setup Java
-#        uses: actions/setup-java@v4
-#        with:
-#          distribution: temurin
-#          java-version: 21
 
       - name: Run JReleaser
         uses: jreleaser/release-action@v2
