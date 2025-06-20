@@ -27,6 +27,14 @@ import static java.util.stream.Collectors.*;
 
 @CommandLine.Command(header = "List installed or available JDK releases", subcommands = ZjdkList.Available.class)
 public class ZjdkList {
+    @CommandLine.Command(name = "installed", header = "Show installed JDKs")
+    static class Installed implements Runnable {
+        @Override
+        public void run() {
+
+        }
+    }
+
     @CommandLine.Command(name = "available", header = "Show available JDKs")
     static class Available implements Runnable {
         private static final File CATALOGUE = new File(System.getProperty("user.home"), ".zjdk/catalogue.json");
