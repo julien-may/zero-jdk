@@ -40,11 +40,16 @@ jobs:
       - name: Build native image
         run: ./mvnw -B clean package -Pnative
 
+      - name: JReleaser assemble
+        uses: jreleaser/release-action@v2
+        with:
+          arguments: 'assemble --config-file=.jreleaser/config.yml --basedir=. --select-current-platform'
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: zjdk-${{ matrix.platform }}-${{ matrix.arch }}
-          path: target/zjdk
+          path: out/jreleaser/assemble/**
           retention-days: 7
 
   release:
@@ -62,15 +67,15 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: out/jreleaser/assemble
 
       - name: Debug
         run: |
-          tree artifacts
+          tree path: out/jreleaser
 
       - name: Run JReleaser
         uses: jreleaser/release-action@v2
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          arguments: 'full-release --config-file=.jreleaser/config.yml --basedir=.'
+          arguments: 'assemble release --config-file=.jreleaser/config.yml --basedir=.'
