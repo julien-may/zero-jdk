@@ -12,21 +12,20 @@ project:
 
 assemble:
   archive:
-    zjdk:
+    zjdk-unix:
       active: ALWAYS
-      distributionType: BINARY
-      formats: [ TAR_GZ, ZIP ]
+      formats: [ TAR_GZ ]
       attachPlatform: true
-      exported: true
       applyDefaultMatrix: false
-      rows:
-#        - { os: linux,   arch: x64,   platform: linux-x86_64,    skipFormats: [ ZIP ] }
-#        - { os: linux,   arch: arm64, platform: linux-aarch_64,  skipFormats: [ ZIP ] }
-#        - { os: macos,   arch: x64,   platform: osx-x86_64,      skipFormats: [ ZIP ] }
-        - { os: macos, arch: arm64, platform: osx-aarch_64, skipFormats: [ ZIP ] }
+      matrix:
+        rows:
+  #        - { os: linux,   arch: x64,   platform: linux-x86_64,    formats: [ TAR_GZ ] }
+  #        - { os: linux,   arch: arm64, platform: linux-aarch_64,  formats: [ TAR_GZ ] }
+  #        - { os: macos,   arch: x64,   platform: osx-x86_64,      formats: [ TAR_GZ ] }
+          - { os: macos, arch: arm64, platform: osx-aarch_64, formats: [ ZIP ] }
 
       fileSets:
-        - input: artifacts/zjdk-{{platform}}
+        - input: artifacts/zjdk-{{matrix.os}}-{{matrix.arch}}
           includes: [ zjdk ]
           output: .
 
