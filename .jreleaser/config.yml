@@ -1,13 +1,13 @@
 matrix:
   rows:
-    - { os: linux,   arch: x64,   platform: linux-x86_64 }
-    - { os: linux,   arch: arm64, platform: linux-aarch_64 }
-    - { os: macos,   arch: x64,   platform: osx-x86_64 }
+    - { os: linux, arch: x64, platform: linux-x86_64 }
+    - { os: linux, arch: arm64, platform: linux-aarch_64 }
+    - { os: macos, arch: x64, platform: osx-x86_64 }
     - { os: macos, arch: arm64, platform: osx-aarch_64 }
 
 project:
-  name: myapp
-  version: 1.0.0
+  name: zjdk
+  version: 0.1.0
   description: Native CLI built with GraalVM
   authors:
     - Julien May
@@ -16,6 +16,7 @@ project:
   links:
     homepage: https://julien-may.github.io/zero-jdk/
 
+# Probably makes sense to move assemble to maven
 assemble:
   archive:
     zjdk:
@@ -30,18 +31,15 @@ assemble:
           output: .
 
 distributions:
-  zjdk:
+  preBuiltPackages:
     type: BINARY
     executable:
-      name: zjdk
+      name: '{{projectVersion}}'
     extraProperties:
       individualChecksum: true
 
 release:
   github:
     enabled: true
-    draft: false
-    skipTag: false
-    overwrite: true
     changelog:
       formatted: ALWAYS
