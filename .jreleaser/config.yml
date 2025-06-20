@@ -1,3 +1,10 @@
+matrix:
+  rows:
+    #        - { os: linux,   arch: x64,   platform: linux-x86_64 }
+    #        - { os: linux,   arch: arm64, platform: linux-aarch_64 }
+    #        - { os: macos,   arch: x64,   platform: osx-x86_64 }
+    - { os: macos, arch: arm64, platform: osx-aarch_64 }
+
 project:
   name: myapp
   version: 1.0.0
@@ -5,10 +12,8 @@ project:
   authors:
     - Julien May
   license: Apache-2.0
-  copyright: Julien - 2025
   links:
     homepage: https://julien-may.github.io/zero-jdk/
-    documentation: https://julien-may.github.io/zero-jdk/
 
 assemble:
   archive:
@@ -16,16 +21,10 @@ assemble:
       active: ALWAYS
       formats: [ TAR_GZ ]
       attachPlatform: true
-      applyDefaultMatrix: false
-      matrix:
-        rows:
-  #        - { os: linux,   arch: x64,   platform: linux-x86_64 }
-  #        - { os: linux,   arch: arm64, platform: linux-aarch_64 }
-  #        - { os: macos,   arch: x64,   platform: osx-x86_64 }
-          - { os: macos, arch: arm64, platform: osx-aarch_64 }
+      archiveName: '{{distributionName}}-{{projectVersion}}-{{matrix.os}}-{{matrix.arch}}'
 
       fileSets:
-        - input: artifacts/zjdk-{{os}}-{{arch}}
+        - input: artifacts/zjdk-{{matrix.os}}-{{matrix.arch}}
           includes: [ zjdk ]
           output: .
 
@@ -36,17 +35,6 @@ distributions:
       name: zjdk
     extraProperties:
       individualChecksum: true
-#    artifacts:
-#      - path: artifacts/zjdk-linux-x64
-#        platform: linux-x86_64
-#      - path: artifacts/zjdk-linux-arm64
-#        platform: linux-aarch_64
-#      - path: artifacts/zjdk-macos-x64
-#        platform: osx-x86_64
-#      - path: artifacts/zjdk-macos-arm64/zjdk
-#        platform: osx-aarch_64
-#        extraProperties:
-#          graalVMNativeImage: true
 
 release:
   github:
