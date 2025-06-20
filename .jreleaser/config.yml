@@ -1,8 +1,8 @@
 matrix:
   rows:
-    #        - { os: linux,   arch: x64,   platform: linux-x86_64 }
-    #        - { os: linux,   arch: arm64, platform: linux-aarch_64 }
-    #        - { os: macos,   arch: x64,   platform: osx-x86_64 }
+    - { os: linux,   arch: x64,   platform: linux-x86_64 }
+    - { os: linux,   arch: arm64, platform: linux-aarch_64 }
+    - { os: macos,   arch: x64,   platform: osx-x86_64 }
     - { os: macos, arch: arm64, platform: osx-aarch_64 }
 
 project:
@@ -12,7 +12,7 @@ project:
   authors:
     - Julien May
   license: Apache-2.0
-  copyright: Julien 2025
+  inceptionYear: 2025
   links:
     homepage: https://julien-may.github.io/zero-jdk/
 
