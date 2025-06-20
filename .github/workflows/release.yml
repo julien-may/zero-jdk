@@ -69,10 +69,6 @@ jobs:
         with:
           path: out/jreleaser/assemble
 
-      - name: Debug
-        run: |
-          tree path: out/jreleaser
-
       - name: Run JReleaser
         uses: jreleaser/release-action@v2
         env:
