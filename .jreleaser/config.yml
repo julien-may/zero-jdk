@@ -12,6 +12,7 @@ project:
   authors:
     - Julien May
   license: Apache-2.0
+  copyright: Julien 2025
   links:
     homepage: https://julien-may.github.io/zero-jdk/
 
