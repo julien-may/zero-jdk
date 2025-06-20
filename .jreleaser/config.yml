@@ -33,7 +33,7 @@ distributions:
 #        platform: linux-aarch_64
 #      - path: artifacts/zjdk-macos-x64
 #        platform: osx-x86_64
-      - path: artifacts/zjdk-macos-arm64
+      - path: artifacts/zjdk-macos-arm64/zjdk
         platform: osx-aarch_64
         extraProperties:
           graalVMNativeImage: true

@@ -61,6 +61,10 @@ jobs:
         with:
           path: artifacts
 
+      - name: Debug
+        run: |
+          tree artifacts
+
 #      - name: Setup Java
 #        uses: actions/setup-java@v4
 #        with:
