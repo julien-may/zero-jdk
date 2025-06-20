@@ -68,6 +68,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: out/jreleaser/assemble
+          merge-multiple: true
 
       - name: Debug
         run: |
