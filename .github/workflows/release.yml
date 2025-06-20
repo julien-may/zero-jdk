@@ -72,4 +72,4 @@ jobs:
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          arguments: 'full-release --config-file=.jreleaser/config.yml'
+          arguments: 'full-release --config-file=.jreleaser/config.yml --basedir=.'

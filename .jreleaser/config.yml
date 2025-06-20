@@ -1,10 +1,14 @@
 project:
   name: myapp
-  version: '{{projectVersion}}'
+  version: 1.0.0
   description: Native CLI built with GraalVM
   authors:
     - Julien May
   license: Apache-2.0
+  copyright: Julien - 2025
+  links:
+    homepage: https://julien-may.github.io/zero-jdk/
+    documentation: https://julien-may.github.io/zero-jdk/
 
 release:
   github:
@@ -26,10 +30,10 @@ distributions:
 #      - path: artifacts/zjdk-linux-x64
 #        platform: linux-x86_64
 #      - path: artifacts/zjdk-linux-arm64
-#        platform: linux-aarch64
+#        platform: linux-aarch_64
 #      - path: artifacts/zjdk-macos-x64
 #        platform: osx-x86_64
       - path: artifacts/zjdk-macos-arm64
-        platform: osx-aarch64
+        platform: osx-aarch_64
         extraProperties:
           graalVMNativeImage: true
