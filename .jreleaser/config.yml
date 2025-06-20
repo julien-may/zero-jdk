@@ -10,14 +10,25 @@ project:
     homepage: https://julien-may.github.io/zero-jdk/
     documentation: https://julien-may.github.io/zero-jdk/
 
-release:
-  github:
-    enabled: true
-    draft: false
-    skipTag: false
-    overwrite: true
-    changelog:
-      formatted: ALWAYS
+assemble:
+  archive:
+    zjdk:
+      active: ALWAYS
+      distributionType: BINARY
+      formats: [ TAR_GZ, ZIP ]
+      attachPlatform: true
+      exported: true
+      applyDefaultMatrix: false
+      rows:
+#        - { os: linux,   arch: x64,   platform: linux-x86_64,    skipFormats: [ ZIP ] }
+#        - { os: linux,   arch: arm64, platform: linux-aarch_64,  skipFormats: [ ZIP ] }
+#        - { os: macos,   arch: x64,   platform: osx-x86_64,      skipFormats: [ ZIP ] }
+        - { os: macos, arch: arm64, platform: osx-aarch_64, skipFormats: [ ZIP ] }
+
+      fileSets:
+        - input: artifacts/zjdk-{{platform}}
+          includes: [ zjdk ]
+          output: .
 
 distributions:
   zjdk:
@@ -37,3 +48,12 @@ distributions:
         platform: osx-aarch_64
         extraProperties:
           graalVMNativeImage: true
+
+release:
+  github:
+    enabled: true
+    draft: false
+    skipTag: false
+    overwrite: true
+    changelog:
+      formatted: ALWAYS
