@@ -1,0 +1,89 @@
+name: release.yml
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}-${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+#          # Linux x64
+#          - platform: linux
+#            arch: x64
+#            runner: ubuntu-latest
+#          # Linux ARM64
+#          - platform: linux
+#            arch: arm64
+#            runner: ubuntu-24.04-arm
+#          # macOS Intel
+#          - platform: macos
+#            arch: x64
+#            runner: macos-13
+          # macOS Apple Silicon
+          - platform: macos
+            arch: arm64
+            runner: macos-latest
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up GraalVM
+        id: graalvm
+        uses: graalvm/setup-graalvm@v1
+        with:
+          distribution: 'graalvm-community'
+          java-version: '24.0.1'
+
+      - name: Build native image
+        run: ./mvnw -B clean package -Pnative
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ matrix.platform }}-${{ matrix.arch }}
+          path: target/cli
+          retention-days: 7
+
+  compress-and-release:
+    name: Compress with UPX & create Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all built binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Install UPX
+        run: |
+          set -eux
+          export UPX_VER=5.0.1
+          curl -L -o upx.tar.xz \
+            "https://github.com/upx/upx/releases/download/v${UPX_VER}/upx-${UPX_VER}-amd64_linux.tar.xz"
+          tar -xJf upx.tar.xz
+          echo "$PWD/upx-${UPX_VER}-amd64_linux" >> "$GITHUB_PATH"
+
+      - name: Compress executables
+        run: |
+          find dist -type f -perm -111 -print0 | while IFS= read -r -d '' f; do
+            echo "UPX $f"
+            upx --best --lzma "$f"
+          done
+
+#      - name: Create GitHub Release
+#        uses: softprops/action-gh-release@v1
+#        with:
+#          files: dist/**/*          # attach every compressed binary
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload compressed bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: compressed-binaries
+          path: dist/**
+          retention-days: 14
