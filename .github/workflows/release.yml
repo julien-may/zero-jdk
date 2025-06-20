@@ -45,6 +45,10 @@ jobs:
         with:
           arguments: 'assemble --config-file=.jreleaser/config.yml --basedir=. --select-current-platform'
 
+      - name: Debug
+        run: |
+          tree out/jreleaser
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -68,6 +72,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: out/jreleaser/assemble
+
+      - name: Debug
+        run: |
+          tree out/jreleaser
 
       - name: Run JReleaser
         uses: jreleaser/release-action@v2
