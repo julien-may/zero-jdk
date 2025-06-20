@@ -20,7 +20,7 @@ assemble:
     zjdk:
       active: ALWAYS
       formats: [ TAR_GZ ]
-      attachPlatform: true
+      applyDefaultMatrix: true
       archiveName: '{{distributionName}}-{{projectVersion}}-{{matrix.os}}-{{matrix.arch}}'
 
       fileSets:
