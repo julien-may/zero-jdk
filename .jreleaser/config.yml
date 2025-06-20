@@ -19,10 +19,10 @@ assemble:
       applyDefaultMatrix: false
       matrix:
         rows:
-  #        - { os: linux,   arch: x64,   platform: linux-x86_64,    formats: [ TAR_GZ ] }
-  #        - { os: linux,   arch: arm64, platform: linux-aarch_64,  formats: [ TAR_GZ ] }
-  #        - { os: macos,   arch: x64,   platform: osx-x86_64,      formats: [ TAR_GZ ] }
-          - { os: macos, arch: arm64, platform: osx-aarch_64, formats: [ ZIP ] }
+  #        - { os: linux,   arch: x64,   platform: linux-x86_64 }
+  #        - { os: linux,   arch: arm64, platform: linux-aarch_64 }
+  #        - { os: macos,   arch: x64,   platform: osx-x86_64 }
+          - { os: macos, arch: arm64, platform: osx-aarch_64 }
 
       fileSets:
         - input: artifacts/zjdk-{{matrix.os}}-{{matrix.arch}}
