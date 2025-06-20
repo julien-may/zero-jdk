@@ -1,0 +1,35 @@
+project:
+  name: myapp
+  version: '{{projectVersion}}'
+  description: Native CLI built with GraalVM
+  authors:
+    - Julien May
+  license: Apache-2.0
+
+release:
+  github:
+    enabled: true
+    draft: false
+    skipTag: false
+    overwrite: true
+    changelog:
+      formatted: ALWAYS
+
+distributions:
+  zjdk:
+    type: BINARY
+    executable:
+      name: zjdk
+    extraProperties:
+      individualChecksum: true
+    artifacts:
+#      - path: artifacts/zjdk-linux-x64
+#        platform: linux-x86_64
+#      - path: artifacts/zjdk-linux-arm64
+#        platform: linux-aarch64
+#      - path: artifacts/zjdk-macos-x64
+#        platform: osx-x86_64
+      - path: artifacts/zjdk-macos-arm64
+        platform: osx-aarch64
+        extraProperties:
+          graalVMNativeImage: true
