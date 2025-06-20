@@ -12,7 +12,7 @@ project:
 
 assemble:
   archive:
-    zjdk-unix:
+    zjdk:
       active: ALWAYS
       formats: [ TAR_GZ ]
       attachPlatform: true
@@ -25,7 +25,7 @@ assemble:
           - { os: macos, arch: arm64, platform: osx-aarch_64 }
 
       fileSets:
-        - input: artifacts/zjdk-{os}}-{{arch}}
+        - input: artifacts/zjdk-{{os}}-{{arch}}
           includes: [ zjdk ]
           output: .
 
