@@ -1,4 +1,4 @@
-package dev.zerojdk.commands;
+package dev.zerojdk.adapter.in.cli;
 
 import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import dev.zerojdk.domain.service.ConfigService;
@@ -18,12 +18,12 @@ public class ZjdkSet {
         @CommandLine.Option(names = {"--global"}, description = "Set globally")
         private boolean global;
 
-        @CommandLine.Parameters(index = "0", description = "The JDK identifier")
-        private String identifier;
+        @CommandLine.Parameters(index = "0", description = "The JDK version")
+        private String version;
 
         @Override
         public void run() {
-            configService.updateConfiguration(identifier, global);
+            configService.updateConfiguration(version, global);
 
             // sync
             new ZjdkSync(catalogRepository, configService, jdkReleaseService).sync(global);

@@ -1,4 +1,4 @@
-package dev.zerojdk.commands;
+package dev.zerojdk.adapter.in.cli;
 
 import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import dev.zerojdk.domain.service.ConfigService;
@@ -14,7 +14,7 @@ public class ZjdkInit implements Runnable {
     private final JdkReleaseService jdkReleaseService;
 
     @CommandLine.Option(names = {"--version"}, description = "Initialize with this JDK version")
-    private String identifier;
+    private String version;
 
     @CommandLine.Option(names = {"--global"}, description = "Initialize globally")
     private boolean global;
@@ -24,7 +24,7 @@ public class ZjdkInit implements Runnable {
         System.out.print("Initializing ZJDK... ");
 
         try {
-            configService.createConfiguration(identifier, global);
+            configService.createConfiguration(version, global);
 
             // Sync
             new ZjdkSync(catalogRepository, configService, jdkReleaseService).sync(global);

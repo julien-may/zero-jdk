@@ -1,13 +1,13 @@
 package dev.zerojdk;
 
-import dev.zerojdk.commands.ZjdkEnv;
-import dev.zerojdk.commands.ZjdkUpdate;
-import dev.zerojdk.commands.ZjdkList;
-import dev.zerojdk.commands.ZjdkInit;
-import dev.zerojdk.commands.ZjdkSet;
-import dev.zerojdk.commands.ZjdkShell;
-import dev.zerojdk.commands.ZjdkSync;
-import dev.zerojdk.commands.ZjdkWrapper;
+import dev.zerojdk.adapter.in.cli.ZjdkEnv;
+import dev.zerojdk.adapter.in.cli.ZjdkUpdate;
+import dev.zerojdk.adapter.in.cli.ZjdkList;
+import dev.zerojdk.adapter.in.cli.ZjdkInit;
+import dev.zerojdk.adapter.in.cli.ZjdkSet;
+import dev.zerojdk.adapter.in.cli.ZjdkShell;
+import dev.zerojdk.adapter.in.cli.ZjdkSync;
+import dev.zerojdk.adapter.in.cli.ZjdkWrapper;
 
 import dev.zerojdk.infrastructure.configuration.BeanConfiguration;
 import picocli.CommandLine;

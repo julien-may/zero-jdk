@@ -1,4 +1,4 @@
-package dev.zerojdk.commands;
+package dev.zerojdk.adapter.in.cli;
 
 import dev.zerojdk.ConfigurationNotFoundException;
 import dev.zerojdk.domain.service.ConfigService;
@@ -14,8 +14,8 @@ public class ZjdkEnv implements Runnable {
 
     @Override
     public void run() {
-        String version = configService.getConfiguredIdentifier(false)
-            .or(() -> configService.getConfiguredIdentifier(true))
+        String version = configService.getActiveVersion(false)
+            .or(() -> configService.getActiveVersion(true))
             .orElseThrow(ConfigurationNotFoundException::new);
 
         jdkReleaseService.findJdkRelease(version).ifPresent(javaHome -> {

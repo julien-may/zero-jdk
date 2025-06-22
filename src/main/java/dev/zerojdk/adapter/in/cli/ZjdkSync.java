@@ -1,4 +1,4 @@
-package dev.zerojdk.commands;
+package dev.zerojdk.adapter.in.cli;
 
 import dev.zerojdk.ConfigurationNotFoundException;
 import dev.zerojdk.UnsupportedIdentifierException;
@@ -33,7 +33,7 @@ public class ZjdkSync implements Runnable {
     }
 
     public void sync(boolean global) {
-        String identifier = configService.getConfiguredIdentifier(global)
+        String identifier = configService.getActiveVersion(global)
             .orElseThrow(ConfigurationNotFoundException::new);
 
         JdkVersion configuredJdkVersion = findConfiguredJdkVersion(identifier);

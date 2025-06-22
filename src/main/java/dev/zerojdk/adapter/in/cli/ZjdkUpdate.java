@@ -1,4 +1,4 @@
-package dev.zerojdk.commands;
+package dev.zerojdk.adapter.in.cli;
 
 import picocli.CommandLine;
 

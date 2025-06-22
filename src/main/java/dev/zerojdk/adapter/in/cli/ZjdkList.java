@@ -1,4 +1,4 @@
-package dev.zerojdk.commands;
+package dev.zerojdk.adapter.in.cli;
 
 import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.port.out.catalog.CatalogRepository;

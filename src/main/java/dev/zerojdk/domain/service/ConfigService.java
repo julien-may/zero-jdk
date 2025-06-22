@@ -16,7 +16,7 @@ public class ConfigService {
     private final ConfigRepository configRepository;
     private final CatalogRepository catalogRepository;
 
-    public Optional<String> getConfiguredIdentifier(boolean global) {
+    public Optional<String> getActiveVersion(boolean global) {
         return configRepository.readVersion(global);
     }
 
