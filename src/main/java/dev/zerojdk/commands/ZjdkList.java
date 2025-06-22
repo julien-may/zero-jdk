@@ -47,13 +47,12 @@ public class ZjdkList {
                 Map<String, List<JdkVersion>> latestByDistro =
                     catalogRepository.findLatest(operatingSystem, processorArchitecture);
 
-
                 latestByDistro.keySet().stream().sorted(Comparator.naturalOrder())
                     .forEach(distribution -> {
                         System.out.printf("%s\n", distribution);
 
                         printVersions(latestByDistro.get(distribution), 2,
-                            Comparator.comparingInt(lv -> "LTS".equals(lv.getSupport()) ? 0 : 1));
+                            Comparator.comparingInt(lv -> JdkVersion.Support.LTS == lv.getSupport() ? 0 : 1));
                     });
             } else {
                 List<JdkVersion> versions = all
@@ -64,7 +63,7 @@ public class ZjdkList {
 
                 Comparator<JdkVersion> comparator = all
                     ? Comparator.comparing(JdkVersion::getDistributionVersion).reversed()
-                    : Comparator.comparingInt(lv -> "LTS".equals(lv.getSupport()) ? 0 : 1);
+                    : Comparator.comparingInt(lv -> JdkVersion.Support.LTS == lv.getSupport() ? 0 : 1);
 
                 printVersions(versions, 0, comparator);
             }

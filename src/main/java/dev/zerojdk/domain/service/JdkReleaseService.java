@@ -1,6 +1,8 @@
 package dev.zerojdk.domain.service;
 
+import dev.zerojdk.domain.port.out.download.DownloadService;
 import dev.zerojdk.domain.model.JdkVersion;
+import dev.zerojdk.infrastructure.unarchiver.UnarchiverFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
@@ -13,13 +15,14 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class JdkReleaseService {
     private final DownloadService downloadService;
+    private final UnarchiverFactory unarchiverFactory;
 
     public Optional<Path> ensureRelease(JdkVersion version) {
         return findJdkRelease(version)
             .or(() -> downloadAndExtract(version));
     }
 
-    Optional<Path> findJdkRelease(JdkVersion jdkVersion) {
+    private Optional<Path> findJdkRelease(JdkVersion jdkVersion) {
         File zjdkHome = new File(System.getProperty("user.home"), ".zjdk");
         File releases = new File(zjdkHome, "releases");
         File jdkRelease = new File(releases, jdkVersion.getIdentifier());
@@ -38,8 +41,9 @@ public class JdkReleaseService {
 
         Files.createDirectories(releases);
 
-        Path archive = downloadService.download(version.getIndirectDownloadUri()).toPath();
-        Path extracted = downloadService.extract(archive.toFile(), releases.resolve(version.getIdentifier()).toFile());
+        File downloadedFile = downloadService.download(version.getIndirectDownloadUri());
+        Path extracted = unarchiverFactory.create(downloadedFile)
+            .extract(releases.resolve(version.getIdentifier()));
 
         return Optional.of(extracted);
     }
