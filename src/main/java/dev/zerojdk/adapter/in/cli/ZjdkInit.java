@@ -1,17 +1,15 @@
 package dev.zerojdk.adapter.in.cli;
 
-import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import dev.zerojdk.domain.service.ConfigService;
-import dev.zerojdk.domain.service.JdkReleaseService;
+import dev.zerojdk.domain.service.ManifestSyncService;
 import lombok.RequiredArgsConstructor;
 import picocli.CommandLine;
 
 @RequiredArgsConstructor
 @CommandLine.Command(header = "Create a manifest in the current or global directory")
 public class ZjdkInit implements Runnable {
-    private final CatalogRepository catalogRepository;
     private final ConfigService configService;
-    private final JdkReleaseService jdkReleaseService;
+    private final ManifestSyncService manifestSyncService;
 
     @CommandLine.Option(names = {"--version"}, description = "Initialize with this JDK version")
     private String version;
@@ -25,9 +23,7 @@ public class ZjdkInit implements Runnable {
 
         try {
             configService.createConfiguration(version, global);
-
-            // Sync
-            new ZjdkSync(catalogRepository, configService, jdkReleaseService).sync(global);
+            manifestSyncService.sync(global);
 
             System.out.println("done");
         } catch (Exception ex) {

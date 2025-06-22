@@ -1,8 +1,7 @@
 package dev.zerojdk.adapter.in.cli;
 
-import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import dev.zerojdk.domain.service.ConfigService;
-import dev.zerojdk.domain.service.JdkReleaseService;
+import dev.zerojdk.domain.service.ManifestSyncService;
 import lombok.RequiredArgsConstructor;
 import picocli.CommandLine;
 
@@ -11,9 +10,8 @@ public class ZjdkSet {
     @RequiredArgsConstructor
     @CommandLine.Command(header = "Version to change")
     public static class Version implements Runnable {
-        private final CatalogRepository catalogRepository;
         private final ConfigService configService;
-        private final JdkReleaseService jdkReleaseService;
+        private final ManifestSyncService manifestSyncService;
 
         @CommandLine.Option(names = {"--global"}, description = "Set globally")
         private boolean global;
@@ -24,9 +22,7 @@ public class ZjdkSet {
         @Override
         public void run() {
             configService.updateConfiguration(version, global);
-
-            // sync
-            new ZjdkSync(catalogRepository, configService, jdkReleaseService).sync(global);
+            manifestSyncService.sync(global);
         }
     }
 }

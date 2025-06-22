@@ -9,6 +9,7 @@ import dev.zerojdk.domain.port.out.index.RegistrationRepository;
 import dev.zerojdk.domain.service.ConfigService;
 import dev.zerojdk.adapter.out.download.HttpDownloadService;
 import dev.zerojdk.domain.service.JdkReleaseService;
+import dev.zerojdk.domain.service.ManifestSyncService;
 import dev.zerojdk.infrastructure.unarchiver.UnarchiverFactory;
 
 import java.io.File;
@@ -36,5 +37,9 @@ public class BeanConfiguration {
 
     private static RegistrationRepository registrationRepository() {
         return new PropertiesRegistrationRepository();
+    }
+
+    public static ManifestSyncService manifestSyncService() {
+        return new ManifestSyncService(catalogRepository(), configService(), jdkReleaseService());
     }
 }
