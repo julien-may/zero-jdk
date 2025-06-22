@@ -95,7 +95,11 @@ public class JsonCatalogRepository implements CatalogRepository {
         jdkVersion.setMajorVersion(jsonJdkVersion.getMajorVersion());
         jdkVersion.setJavafxBundled(jsonJdkVersion.isJavafxBundled());
         jdkVersion.setIdentifier(jsonJdkVersion.getIdentifier());
-        jdkVersion.setSupport(jsonJdkVersion.getSupport());
+        jdkVersion.setSupport(switch (jsonJdkVersion.getSupport()) {
+            case "LTS" -> JdkVersion.Support.LTS;
+            case "Non-LTS" -> JdkVersion.Support.NON_LTS;
+            default -> null;
+        });
         jdkVersion.setLink(jsonJdkVersion.getLink());
         jdkVersion.setOperatingSystem(switch (jsonJdkVersion.getOperatingSystem()) {
             case "linux" -> OperatingSystem.LINUX;

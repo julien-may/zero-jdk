@@ -36,15 +36,18 @@ public class Application implements Runnable {
         CommandLine commandLine = new CommandLine(new Application())
             .addSubcommand("init", new ZjdkInit(
                 BeanConfiguration.catalogRepository(),
-                BeanConfiguration.configService()))
+                BeanConfiguration.configService(),
+                BeanConfiguration.jdkReleaseService()))
             .addSubcommand("sync", new ZjdkSync(
                 BeanConfiguration.catalogRepository(),
-                BeanConfiguration.configService()))
+                BeanConfiguration.configService(),
+                BeanConfiguration.jdkReleaseService()))
             .addSubcommand("wrapper", new ZjdkWrapper())
             .addSubcommand("set", new CommandLine(new ZjdkSet())
                 .addSubcommand("version", new ZjdkSet.Version(
                     BeanConfiguration.catalogRepository(),
-                    BeanConfiguration.configService())))
+                    BeanConfiguration.configService(),
+                    BeanConfiguration.jdkReleaseService())))
             .addSubcommand("env", new ZjdkEnv(
                 BeanConfiguration.configService()))
             .addSubcommand("list", new CommandLine(new ZjdkList())

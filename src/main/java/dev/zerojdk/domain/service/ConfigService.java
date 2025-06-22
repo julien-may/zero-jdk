@@ -30,7 +30,7 @@ public class ConfigService {
     public void createConfiguration(String identifier, boolean global) {
         if (identifier == null) {
             identifier = catalogRepository.findLatestByDistribution(detectOperatingSystem(), detectProcessorArchitecture(), "Temurin").stream()
-                .filter(jdkVersion -> jdkVersion.getSupport().equals("lts"))
+                .filter(jdkVersion -> jdkVersion.getSupport() == JdkVersion.Support.LTS)
                 .map(JdkVersion::getIdentifier)
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("There was an issue resolving the default identifier"));

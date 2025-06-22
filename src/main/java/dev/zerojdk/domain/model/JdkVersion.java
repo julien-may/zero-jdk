@@ -12,10 +12,14 @@ public class JdkVersion {
     private int majorVersion;
     private boolean javafxBundled;
     private String identifier;
-    private String support;
+    private Support support;
     private String link;
     private OperatingSystem operatingSystem;
     private ProcessorArchitecture architecture;
     private String indirectDownloadUri;
     private String archiveType;
+
+    public enum Support {
+        LTS, NON_LTS
+    }
 }

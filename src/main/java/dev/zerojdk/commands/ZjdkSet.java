@@ -2,6 +2,7 @@ package dev.zerojdk.commands;
 
 import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import dev.zerojdk.domain.service.ConfigService;
+import dev.zerojdk.domain.service.JdkReleaseService;
 import lombok.RequiredArgsConstructor;
 import picocli.CommandLine;
 
@@ -12,6 +13,7 @@ public class ZjdkSet {
     public static class Version implements Runnable {
         private final CatalogRepository catalogRepository;
         private final ConfigService configService;
+        private final JdkReleaseService jdkReleaseService;
 
         @CommandLine.Option(names = {"--global"}, description = "Set globally")
         private boolean global;
@@ -24,7 +26,7 @@ public class ZjdkSet {
             configService.updateConfiguration(identifier, global);
 
             // sync
-            new ZjdkSync(catalogRepository, configService).sync(global);
+            new ZjdkSync(catalogRepository, configService, jdkReleaseService).sync(global);
         }
     }
 }
