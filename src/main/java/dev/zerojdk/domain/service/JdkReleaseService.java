@@ -1,5 +1,8 @@
 package dev.zerojdk.domain.service;
 
+import dev.zerojdk.domain.model.InstallationRecord;
+import dev.zerojdk.domain.model.JdkRelease;
+import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import dev.zerojdk.domain.port.out.download.DownloadService;
 import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.port.out.index.RegistrationRepository;
@@ -13,27 +16,33 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import static dev.zerojdk.utils.OperatingSystem.detectOperatingSystem;
+import static dev.zerojdk.utils.ProcessorArchitecture.detectProcessorArchitecture;
+
 @RequiredArgsConstructor
 public class JdkReleaseService {
     private final DownloadService downloadService;
     private final UnarchiverFactory unarchiverFactory;
+    private final CatalogRepository catalogRepository;
     private final RegistrationRepository repository;
 
     public void ensureRelease(JdkVersion version) {
-        Optional<Path> jdkRelease = findJdkRelease(version.getIdentifier());
-
-        if (jdkRelease.isEmpty()) {
-            Path path = downloadAndExtract(version);
-
-            findJavaHome(path)
-                .ifPresent(javaHome -> repository.register(version, path, javaHome));
+        if (findJdkRelease(version.getIdentifier()).isPresent()) {
+            return;
         }
+
+        Path path = downloadAndExtract(version);
+
+        findJavaHome(path).ifPresent(javaHome ->
+            repository.register(new InstallationRecord(version.getIdentifier(), path, javaHome)));
     }
 
-    // TODO: returning the home only is a bit stupid
-    public Optional<Path> findJdkRelease(String identifier) {
+    public Optional<JdkRelease> findJdkRelease(String identifier) {
         return repository.find(identifier)
-            .map(indexEntry -> Path.of(indexEntry.javaHome()));
+            .flatMap(installationRecord ->
+                catalogRepository.findByIdentifier(detectOperatingSystem(), detectProcessorArchitecture(), installationRecord.identifier())
+                    .map(jdkVersion -> new JdkRelease(jdkVersion, installationRecord.installRoot(), installationRecord.javaHome()))
+            );
     }
 
     @SneakyThrows

@@ -1,4 +1,4 @@
-package dev.zerojdk;
+package dev.zerojdk.domain.service;
 
 public class ConfigurationNotFoundException extends RuntimeException {
     public ConfigurationNotFoundException() {

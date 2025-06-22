@@ -9,7 +9,9 @@ import dev.zerojdk.adapter.in.cli.ZjdkShell;
 import dev.zerojdk.adapter.in.cli.ZjdkSync;
 import dev.zerojdk.adapter.in.cli.ZjdkWrapper;
 
-import dev.zerojdk.infrastructure.configuration.BeanConfiguration;
+import dev.zerojdk.domain.service.ConfigurationNotFoundException;
+import dev.zerojdk.domain.service.UnsupportedIdentifierException;
+import dev.zerojdk.infrastructure.configuration.ApplicationContext;
 import picocli.CommandLine;
 
 import java.util.LinkedHashMap;
@@ -19,13 +21,14 @@ import java.util.Map;
 import static picocli.CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIST;
 import static picocli.CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIST_HEADING;
 
-@CommandLine.Command(name = "zjdk" , mixinStandardHelpOptions = true, footer = "%nSee 'zjdk help <command>' to read about a specific subcommand", commandListHeading = "%nCommands:%n"
-    )
+@CommandLine.Command(name = "zjdk" , mixinStandardHelpOptions = true, footer = "%nSee 'zjdk help <command>' to read about a specific subcommand", commandListHeading = "%nCommands:%n")
 public class Application implements Runnable {
     @CommandLine.Spec
     private CommandLine.Model.CommandSpec spec;
 
     public static void main(String[] args) {
+        ApplicationContext context = new ApplicationContext();
+
         Map<String, List<String>> sections = new LinkedHashMap<>();
         sections.put("%nBootstrap%n", List.of("init", "sync", "wrapper"));
         sections.put("%nVersion Management%n", List.of("list", "set"));
@@ -35,21 +38,21 @@ public class Application implements Runnable {
 
         CommandLine commandLine = new CommandLine(new Application())
             .addSubcommand("init", new ZjdkInit(
-                BeanConfiguration.configService(),
-                BeanConfiguration.manifestSyncService()))
+                context.getConfigService(),
+                context.getManifestSyncService()))
             .addSubcommand("sync", new ZjdkSync(
-                BeanConfiguration.manifestSyncService()))
+                context.getManifestSyncService()))
             .addSubcommand("wrapper", new ZjdkWrapper())
             .addSubcommand("set", new CommandLine(new ZjdkSet())
                 .addSubcommand("version", new ZjdkSet.Version(
-                    BeanConfiguration.configService(),
-                    BeanConfiguration.manifestSyncService())))
+                    context.getConfigService(),
+                    context.getManifestSyncService())))
             .addSubcommand("env", new ZjdkEnv(
-                BeanConfiguration.configService(),
-                BeanConfiguration.jdkReleaseService()))
+                context.getConfigService(),
+                context.getJdkReleaseService()))
             .addSubcommand("list", new CommandLine(new ZjdkList())
                 .addSubcommand("available", new ZjdkList.Available(
-                    BeanConfiguration.catalogRepository())))
+                    context.getCatalogRepository())))
             .addSubcommand("shell", new ZjdkShell())
             .addSubcommand("update", new ZjdkUpdate())
             .addSubcommand(new CommandLine.HelpCommand())

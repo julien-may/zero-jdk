@@ -1,8 +1,7 @@
-package dev.zerojdk;
+package dev.zerojdk.domain.service;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
 
 @Data
 @EqualsAndHashCode(callSuper = true)

@@ -1,7 +1,5 @@
 package dev.zerojdk.domain.service;
 
-import dev.zerojdk.ConfigurationNotFoundException;
-import dev.zerojdk.UnsupportedIdentifierException;
 import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import lombok.RequiredArgsConstructor;

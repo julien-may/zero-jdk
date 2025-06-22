@@ -1,6 +1,5 @@
 package dev.zerojdk.domain.service;
 
-import dev.zerojdk.UnsupportedIdentifierException;
 import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import dev.zerojdk.domain.port.out.config.ConfigRepository;

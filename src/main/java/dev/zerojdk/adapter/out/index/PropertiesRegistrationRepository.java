@@ -1,7 +1,6 @@
 package dev.zerojdk.adapter.out.index;
 
-import dev.zerojdk.domain.model.IndexEntry;
-import dev.zerojdk.domain.model.JdkVersion;
+import dev.zerojdk.domain.model.InstallationRecord;
 import dev.zerojdk.domain.port.out.index.RegistrationRepository;
 import lombok.SneakyThrows;
 
@@ -18,11 +17,13 @@ public class PropertiesRegistrationRepository implements RegistrationRepository 
 
     @SneakyThrows
     @Override
-    public void register(JdkVersion jdkVersion, Path releaseRoot, Path javaHome) {
-        File info = new File(releaseRoot.toFile(), ".info");
+    public void register(InstallationRecord installationRecord) {
+        File info = installationRecord.installRoot()
+            .resolve(".info")
+            .toFile();
 
         Properties props = new Properties();
-        props.setProperty("home", javaHome.toString());
+        props.setProperty("home", installationRecord.javaHome().toAbsolutePath().toString());
 
         try (FileOutputStream fos = new FileOutputStream(info)) {
             props.store(fos, null);
@@ -31,9 +32,13 @@ public class PropertiesRegistrationRepository implements RegistrationRepository 
 
     @SneakyThrows
     @Override
-    public Optional<IndexEntry> find(String identifier) {
-        File release = new File(RELEASES_FOLDER, identifier);
-        File info = new File(release, ".info");
+    public Optional<InstallationRecord> find(String identifier) {
+        Path release = RELEASES_FOLDER.toPath()
+            .resolve(identifier);
+
+        File info = release
+            .resolve(".info")
+            .toFile();
 
         if (!info.exists()) {
             return Optional.empty();
@@ -45,6 +50,6 @@ public class PropertiesRegistrationRepository implements RegistrationRepository 
         }
 
         return Optional.ofNullable(properties.getProperty("home"))
-            .map(home -> new IndexEntry(identifier, release.getAbsolutePath(), home));
+            .map(home -> new InstallationRecord(identifier, release.toAbsolutePath(), Path.of(home)));
     }
 }
