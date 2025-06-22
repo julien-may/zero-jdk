@@ -1,13 +1,10 @@
 package dev.zerojdk.commands;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import dev.zerojdk.ConfigurationNotFoundException;
 import dev.zerojdk.UnsupportedIdentifierException;
-import dev.zerojdk.utils.OperatingSystem;
-import dev.zerojdk.utils.ProcessorArchitecture;
+import dev.zerojdk.domain.model.JdkVersion;
+import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -30,18 +27,15 @@ import java.util.stream.Stream;
 import static dev.zerojdk.utils.OperatingSystem.*;
 import static dev.zerojdk.utils.ProcessorArchitecture.*;
 
+@RequiredArgsConstructor
 @CommandLine.Command(header = "Ensure that the JDK declared in the manifest is ready")
 public class ZjdkSync implements Runnable {
-    private static final File CATALOGUE = new File(System.getProperty("user.home"), ".zjdk/catalogue.json");
-
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-        .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
-        .enable(SerializationFeature.INDENT_OUTPUT);
+    private final CatalogRepository catalogRepository;
 
     @CommandLine.Option(names = {"--global"}, description = "Sync globally")
     private boolean global;
 
-    private record JdkPaths(ZjdkList.JdkVersion version, Path extractedRoot, Path javaHome) {}
+    private record JdkPaths(JdkVersion version, Path extractedRoot, Path javaHome) {}
 
     @SneakyThrows
     @Override
@@ -52,8 +46,8 @@ public class ZjdkSync implements Runnable {
         sync(global);
     }
 
-    public static void sync(boolean global) {
-        ZjdkList.JdkVersion configuredJdkVersion = findConfiguredJdkVersion(
+    public void sync(boolean global) {
+        JdkVersion configuredJdkVersion = findConfiguredJdkVersion(
             findZjdkConfiguration(global
                 ? ZjdkSync.SearchMode.USER_HOME
                 : ZjdkSync.SearchMode.WORKSPACE));
@@ -67,12 +61,12 @@ public class ZjdkSync implements Runnable {
             paths.javaHome()));
     }
 
-    private static Optional<Path> ensureRelease(ZjdkList.JdkVersion version) {
+    private static Optional<Path> ensureRelease(JdkVersion version) {
         return findJdkRelease(version)
             .or(() -> downloadAndExtract(version));
     }
 
-    private static Optional<Path> downloadAndExtract(ZjdkList.JdkVersion version) {
+    private static Optional<Path> downloadAndExtract(JdkVersion version) {
         Path targetParent = Path.of(System.getProperty("user.home"), ".zjdk");
         Path releases = targetParent.resolve("releases");
 
@@ -88,7 +82,7 @@ public class ZjdkSync implements Runnable {
         return Optional.of(extracted);
     }
 
-    private static Optional<Path> findJdkRelease(ZjdkList.JdkVersion jdkVersion) {
+    private static Optional<Path> findJdkRelease(JdkVersion jdkVersion) {
         File zjdkHome = new File(System.getProperty("user.home"), ".zjdk");
         File releases = new File(zjdkHome, "releases");
         File jdkRelease = new File(releases, jdkVersion.getIdentifier());
@@ -105,7 +99,7 @@ public class ZjdkSync implements Runnable {
 
 
     @SneakyThrows
-    private static void registerJdk(ZjdkList.JdkVersion jdkVersion, Path release, Path javaHome) {
+    private static void registerJdk(JdkVersion jdkVersion, Path release, Path javaHome) {
         File info = new File(release.toFile(), ".info");
 
         Properties props = new Properties();
@@ -221,10 +215,10 @@ public class ZjdkSync implements Runnable {
             .orElseThrow(ConfigurationNotFoundException::new);
     }
 
-    private static ZjdkList.JdkVersion findConfiguredJdkVersion(Path root) {
+    private JdkVersion findConfiguredJdkVersion(Path root) {
         String identifier = findVersionInConfig(root);
 
-        return findByIdentifier(detectOperatingSystem(), detectProcessorArchitecture(), identifier)
+        return catalogRepository.findByIdentifier(detectOperatingSystem(), detectProcessorArchitecture(), identifier)
             .orElseThrow(() -> new UnsupportedIdentifierException(identifier));
     }
 
@@ -449,18 +443,5 @@ public class ZjdkSync implements Runnable {
         }
 
         return destination.toPath();
-    }
-
-
-
-    @SneakyThrows
-    public static Optional<ZjdkList.JdkVersion> findByIdentifier(OperatingSystem os, ProcessorArchitecture arch, String identifier) {
-        List<ZjdkList.JdkVersion> catalogue = MAPPER.readValue(CATALOGUE, new TypeReference<>() {});
-
-        return catalogue.stream()
-            .filter(jdkVersion -> jdkVersion.getIdentifier().equals(identifier))
-            .filter(jdkVersion -> jdkVersion.getOperatingSystem().equals(os))
-            .filter(jdkVersion -> jdkVersion.getArchitecture().equals(arch))
-            .findFirst();
     }
 }

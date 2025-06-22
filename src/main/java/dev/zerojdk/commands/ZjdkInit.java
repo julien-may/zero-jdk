@@ -1,6 +1,8 @@
 package dev.zerojdk.commands;
 
 import dev.zerojdk.UnsupportedIdentifierException;
+import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
+import lombok.RequiredArgsConstructor;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -11,8 +13,11 @@ import java.nio.file.Path;
 import static dev.zerojdk.utils.OperatingSystem.detectOperatingSystem;
 import static dev.zerojdk.utils.ProcessorArchitecture.detectProcessorArchitecture;
 
+@RequiredArgsConstructor
 @CommandLine.Command(header = "Create a manifest in the current or global directory")
 public class ZjdkInit implements Runnable {
+    private final CatalogRepository catalogRepository;
+
     @CommandLine.Option(names = {"--version"}, description = "Initialize with this JDK version", defaultValue = "foo-bar")
     private String identifier;
 
@@ -39,7 +44,7 @@ public class ZjdkInit implements Runnable {
                 throw new RuntimeException(e);
             }
 
-            ZjdkSync.findByIdentifier(detectOperatingSystem(), detectProcessorArchitecture(), identifier)
+            catalogRepository.findByIdentifier(detectOperatingSystem(), detectProcessorArchitecture(), identifier)
                 .orElseThrow(() -> new UnsupportedIdentifierException(identifier));
 
             File file = new File(path.toFile(), ZJDK_PROPERTIES.getPath());
@@ -49,7 +54,7 @@ public class ZjdkInit implements Runnable {
             ZjdkSet.Version.updateConfig(identifier, file.toPath());
 
             // Sync
-            ZjdkSync.sync(global);
+            new ZjdkSync(catalogRepository).sync(global);
 
             System.out.println("done");
         } catch (Exception ex) {

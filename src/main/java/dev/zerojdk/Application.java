@@ -9,6 +9,7 @@ import dev.zerojdk.commands.ZjdkShell;
 import dev.zerojdk.commands.ZjdkSync;
 import dev.zerojdk.commands.ZjdkWrapper;
 
+import dev.zerojdk.infrastructure.configuration.BeanConfiguration;
 import picocli.CommandLine;
 
 import java.util.LinkedHashMap;
@@ -33,12 +34,18 @@ public class Application implements Runnable {
         CommandGroupRenderer renderer = new CommandGroupRenderer(sections);
 
         CommandLine commandLine = new CommandLine(new Application())
-            .addSubcommand("init", new ZjdkInit())
-            .addSubcommand("sync", new ZjdkSync())
+            .addSubcommand("init", new ZjdkInit(
+                BeanConfiguration.catalogRepository()))
+            .addSubcommand("sync", new ZjdkSync(
+                BeanConfiguration.catalogRepository()))
             .addSubcommand("wrapper", new ZjdkWrapper())
-            .addSubcommand("set", new ZjdkSet())
+            .addSubcommand("set", new CommandLine(new ZjdkSet())
+                .addSubcommand("version", new ZjdkSet.Version(
+                    BeanConfiguration.catalogRepository())))
             .addSubcommand("env", new ZjdkEnv())
-            .addSubcommand("list", new ZjdkList())
+            .addSubcommand("list", new CommandLine(new ZjdkList())
+                .addSubcommand("available", new ZjdkList.Available(
+                    BeanConfiguration.catalogRepository())))
             .addSubcommand("shell", new ZjdkShell())
             .addSubcommand("update", new ZjdkUpdate())
             .addSubcommand(new CommandLine.HelpCommand())

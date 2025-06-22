@@ -1,21 +1,13 @@
 package dev.zerojdk.commands;
 
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import dev.zerojdk.domain.model.JdkVersion;
+import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import dev.zerojdk.utils.OperatingSystem;
 import dev.zerojdk.utils.ProcessorArchitecture;
-import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import picocli.CommandLine;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +17,7 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.*;
 
-@CommandLine.Command(header = "List installed or available JDK releases", subcommands = ZjdkList.Available.class)
+@CommandLine.Command(header = "List installed or available JDK releases")
 public class ZjdkList {
     @CommandLine.Command(name = "installed", header = "Show installed JDKs")
     static class Installed implements Runnable {
@@ -35,11 +27,10 @@ public class ZjdkList {
         }
     }
 
+    @RequiredArgsConstructor
     @CommandLine.Command(name = "available", header = "Show available JDKs")
-    static class Available implements Runnable {
-        private static final File CATALOGUE = new File(System.getProperty("user.home"), ".zjdk/catalogue.json");
-        private static final ObjectMapper MAPPER = new ObjectMapper()
-            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+    public static class Available implements Runnable {
+        private final CatalogRepository catalogRepository;
 
         @CommandLine.Option(names = {"--dist"}, description = "The distribution")
         private String distribution;
@@ -54,7 +45,7 @@ public class ZjdkList {
 
             if (distribution == null) {
                 Map<String, List<JdkVersion>> latestByDistro =
-                    findLatestVersions(operatingSystem, processorArchitecture);
+                    catalogRepository.findLatest(operatingSystem, processorArchitecture);
 
 
                 latestByDistro.keySet().stream().sorted(Comparator.naturalOrder())
@@ -66,10 +57,10 @@ public class ZjdkList {
                     });
             } else {
                 List<JdkVersion> versions = all
-                    ? findAllVersions(operatingSystem, processorArchitecture, distribution).stream()
+                    ? catalogRepository.findAllByDistribution(operatingSystem, processorArchitecture, distribution).stream()
                         .sorted(Comparator.comparing(JdkVersion::getDistributionVersion))
                         .toList()
-                    : findLatestVersions(operatingSystem, processorArchitecture, distribution);
+                    : catalogRepository.findLatestByDistribution(operatingSystem, processorArchitecture, distribution);
 
                 Comparator<JdkVersion> comparator = all
                     ? Comparator.comparing(JdkVersion::getDistributionVersion).reversed()
@@ -121,112 +112,6 @@ public class ZjdkList {
                 version.getDistributionVersion(),
                 version.getMajorVersion(),
                 version.getJavaVersion());
-        }
-
-        @SneakyThrows
-        private Map<String, List<JdkVersion>> findAllVersions(OperatingSystem os, ProcessorArchitecture arch) {
-            List<JdkVersion> catalogue = MAPPER.readValue(CATALOGUE, new TypeReference<>() {});
-
-            return catalogue.stream()
-                .filter(jdkVersion ->
-                    jdkVersion.getOperatingSystem() == os && jdkVersion.getArchitecture() == arch)
-                .collect(groupingBy(JdkVersion::getDistribution));
-        }
-
-        @SneakyThrows
-        private Map<String, List<JdkVersion>> findLatestVersions(OperatingSystem os, ProcessorArchitecture arch) {
-            List<JdkVersion> catalogue = MAPPER.readValue(CATALOGUE, new TypeReference<>() {});
-
-            return catalogue.stream()
-                .filter(jdkVersion ->
-                    jdkVersion.getOperatingSystem() == os && jdkVersion.getArchitecture() == arch)
-                .collect(groupingBy(JdkVersion::getDistribution,
-                    collectingAndThen(
-                        groupingBy(JdkVersion::getSupport,
-                            collectingAndThen(toList(), list -> {
-                                Runtime.Version max = list.stream()
-                                    .map(JdkVersion::getDistributionVersion)
-                                    .max(Comparator.naturalOrder())
-                                    .orElseThrow();
-
-                                // The same distribution version can be used for bundled javafx versions
-                                return list.stream()
-                                    .filter(j -> j.getDistributionVersion().equals(max))
-                                    .toList();
-                            })),
-                        m -> m.values().stream()
-                            .flatMap(List::stream)
-                            .toList())));
-        }
-
-        private List<JdkVersion> findLatestVersions(OperatingSystem os, ProcessorArchitecture arch, String distribution) {
-            return findLatestVersions(os, arch).getOrDefault(distribution, List.of());
-        }
-
-        private List<JdkVersion> findAllVersions(OperatingSystem os, ProcessorArchitecture arch, String distribution) {
-            return findAllVersions(os, arch).getOrDefault(distribution, List.of());
-        }
-    }
-
-    @Data
-    public static class JdkVersion {
-        private String distribution;
-        @JsonDeserialize(using = RuntimeVersionDeserializer.class)
-        private Runtime.Version distributionVersion;
-        @JsonDeserialize(using = RuntimeVersionDeserializer.class)
-        private Runtime.Version javaVersion;
-        private int majorVersion;
-        private boolean javafxBundled;
-        private String identifier;
-        private String support;
-        private String link;
-        @JsonDeserialize(using = OperatingSystemDeserializer.class)
-        private OperatingSystem operatingSystem;
-        @JsonDeserialize(using = ProcessorArchitectureDeserializer.class)
-        private ProcessorArchitecture architecture;
-        private String indirectDownloadUri;
-        private String archiveType;
-    }
-
-    public static class OperatingSystemDeserializer extends StdDeserializer<OperatingSystem> {
-        public OperatingSystemDeserializer() {
-            super(String.class);
-        }
-
-        @Override
-        public OperatingSystem deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
-            return switch (p.getText()) {
-                case "linux" -> OperatingSystem.LINUX;
-                case "windows" -> OperatingSystem.WINDOWS;
-                case "macos" -> OperatingSystem.MACOS;
-                case "aix" -> OperatingSystem.AIX;
-                default -> null;
-            };
-        }
-    }
-
-    public static class ProcessorArchitectureDeserializer extends StdDeserializer<ProcessorArchitecture> {
-        public ProcessorArchitectureDeserializer() {
-            super(String.class);
-        }
-
-        @Override
-        public ProcessorArchitecture deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
-            return switch (p.getText()) {
-                case "aarch64" -> ProcessorArchitecture.AARCH64;
-                default -> null;
-            };
-        }
-    }
-
-    public static class RuntimeVersionDeserializer extends StdDeserializer<Runtime.Version> {
-        public RuntimeVersionDeserializer() {
-            super(String.class);
-        }
-
-        @Override
-        public Runtime.Version deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
-            return Runtime.Version.parse(p.getText());
         }
     }
 }
