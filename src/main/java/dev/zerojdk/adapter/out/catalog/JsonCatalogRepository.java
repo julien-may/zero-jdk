@@ -1,9 +1,9 @@
-package dev.zerojdk.adapter.out.catalog.json;
+package dev.zerojdk.adapter.out.catalog;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import dev.zerojdk.adapter.out.catalog.json.model.JsonJdkVersion;
+import dev.zerojdk.adapter.out.catalog.model.JsonJdkVersion;
 import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import dev.zerojdk.utils.OperatingSystem;

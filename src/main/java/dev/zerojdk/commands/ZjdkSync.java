@@ -10,10 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import picocli.CommandLine;
 
-import java.io.*;
-import java.nio.file.*;
-import java.util.*;
-
 import static dev.zerojdk.utils.OperatingSystem.*;
 import static dev.zerojdk.utils.ProcessorArchitecture.*;
 
@@ -26,8 +22,6 @@ public class ZjdkSync implements Runnable {
 
     @CommandLine.Option(names = {"--global"}, description = "Sync globally")
     private boolean global;
-
-    private record JdkPaths(JdkVersion version, Path extractedRoot, Path javaHome) {}
 
     @SneakyThrows
     @Override
@@ -44,28 +38,7 @@ public class ZjdkSync implements Runnable {
 
         JdkVersion configuredJdkVersion = findConfiguredJdkVersion(identifier);
 
-        jdkReleaseService.ensureRelease(configuredJdkVersion)
-            .flatMap(root -> jdkReleaseService.findJavaHome(root)
-                .map(javaHome -> new JdkPaths(configuredJdkVersion, root, javaHome)))
-        .ifPresent(paths -> registerJdk(
-            paths.version(),
-            paths.extractedRoot(),
-            paths.javaHome()));
-    }
-
-    public record IndexEntry(String identifier, String release, String javaHome) { }
-
-
-    @SneakyThrows
-    private static void registerJdk(JdkVersion jdkVersion, Path release, Path javaHome) {
-        File info = new File(release.toFile(), ".info");
-
-        Properties props = new Properties();
-        props.setProperty("home", javaHome.toString());
-
-        try (FileOutputStream fileOutputStream = new FileOutputStream(info)) {
-            props.store(fileOutputStream, null);
-        }
+        jdkReleaseService.ensureRelease(configuredJdkVersion);
     }
 
     private JdkVersion findConfiguredJdkVersion(String identifier) {

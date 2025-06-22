@@ -1,4 +1,4 @@
-package dev.zerojdk.adapter.out.catalog.json.model;
+package dev.zerojdk.adapter.out.catalog.model;
 
 import lombok.Data;
 

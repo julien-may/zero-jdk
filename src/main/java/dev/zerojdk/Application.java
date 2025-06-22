@@ -49,7 +49,8 @@ public class Application implements Runnable {
                     BeanConfiguration.configService(),
                     BeanConfiguration.jdkReleaseService())))
             .addSubcommand("env", new ZjdkEnv(
-                BeanConfiguration.configService()))
+                BeanConfiguration.configService(),
+                BeanConfiguration.jdkReleaseService()))
             .addSubcommand("list", new CommandLine(new ZjdkList())
                 .addSubcommand("available", new ZjdkList.Available(
                     BeanConfiguration.catalogRepository())))

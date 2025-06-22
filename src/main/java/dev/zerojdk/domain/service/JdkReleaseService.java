@@ -2,6 +2,7 @@ package dev.zerojdk.domain.service;
 
 import dev.zerojdk.domain.port.out.download.DownloadService;
 import dev.zerojdk.domain.model.JdkVersion;
+import dev.zerojdk.domain.port.out.index.RegistrationRepository;
 import dev.zerojdk.infrastructure.unarchiver.UnarchiverFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -16,40 +17,40 @@ import java.util.stream.Stream;
 public class JdkReleaseService {
     private final DownloadService downloadService;
     private final UnarchiverFactory unarchiverFactory;
+    private final RegistrationRepository repository;
 
-    public Optional<Path> ensureRelease(JdkVersion version) {
-        return findJdkRelease(version)
-            .or(() -> downloadAndExtract(version));
+    public void ensureRelease(JdkVersion version) {
+        Optional<Path> jdkRelease = findJdkRelease(version.getIdentifier());
+
+        if (jdkRelease.isEmpty()) {
+            Path path = downloadAndExtract(version);
+
+            findJavaHome(path)
+                .ifPresent(javaHome -> repository.register(version, path, javaHome));
+        }
     }
 
-    private Optional<Path> findJdkRelease(JdkVersion jdkVersion) {
-        File zjdkHome = new File(System.getProperty("user.home"), ".zjdk");
-        File releases = new File(zjdkHome, "releases");
-        File jdkRelease = new File(releases, jdkVersion.getIdentifier());
-
-        if (jdkRelease.exists()) {
-            return Optional.of(jdkRelease.toPath());
-        }
-
-        return Optional.empty();
+    // TODO: returning the home only is a bit stupid
+    public Optional<Path> findJdkRelease(String identifier) {
+        return repository.find(identifier)
+            .map(indexEntry -> Path.of(indexEntry.javaHome()));
     }
 
     @SneakyThrows
-    private Optional<Path> downloadAndExtract(JdkVersion version) {
+    private Path downloadAndExtract(JdkVersion version) {
         Path targetParent = Path.of(System.getProperty("user.home"), ".zjdk");
         Path releases = targetParent.resolve("releases");
 
         Files.createDirectories(releases);
 
         File downloadedFile = downloadService.download(version.getIndirectDownloadUri());
-        Path extracted = unarchiverFactory.create(downloadedFile)
-            .extract(releases.resolve(version.getIdentifier()));
 
-        return Optional.of(extracted);
+        return unarchiverFactory.create(downloadedFile)
+            .extract(releases.resolve(version.getIdentifier()));
     }
 
     @SneakyThrows
-    public Optional<Path> findJavaHome(Path root) {
+    private Optional<Path> findJavaHome(Path root) {
         try (Stream<Path> path = Files.walk(root)) {
             return path.filter(p -> p.getFileName().toString().equals("java"))
                 .filter(Files::isExecutable)

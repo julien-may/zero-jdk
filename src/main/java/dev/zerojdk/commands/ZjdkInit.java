@@ -6,8 +6,6 @@ import dev.zerojdk.domain.service.JdkReleaseService;
 import lombok.RequiredArgsConstructor;
 import picocli.CommandLine;
 
-import java.io.File;
-
 @RequiredArgsConstructor
 @CommandLine.Command(header = "Create a manifest in the current or global directory")
 public class ZjdkInit implements Runnable {
