@@ -4,6 +4,7 @@ import dev.zerojdk.ConfigurationNotFoundException;
 import dev.zerojdk.UnsupportedIdentifierException;
 import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
+import dev.zerojdk.domain.service.ConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -31,6 +32,7 @@ import static dev.zerojdk.utils.ProcessorArchitecture.*;
 @CommandLine.Command(header = "Ensure that the JDK declared in the manifest is ready")
 public class ZjdkSync implements Runnable {
     private final CatalogRepository catalogRepository;
+    private final ConfigService configService;
 
     @CommandLine.Option(names = {"--global"}, description = "Sync globally")
     private boolean global;
@@ -47,10 +49,10 @@ public class ZjdkSync implements Runnable {
     }
 
     public void sync(boolean global) {
-        JdkVersion configuredJdkVersion = findConfiguredJdkVersion(
-            findZjdkConfiguration(global
-                ? ZjdkSync.SearchMode.USER_HOME
-                : ZjdkSync.SearchMode.WORKSPACE));
+        String identifier = configService.getConfiguredIdentifier(global)
+            .orElseThrow(ConfigurationNotFoundException::new);
+
+        JdkVersion configuredJdkVersion = findConfiguredJdkVersion(identifier);
 
         ensureRelease(configuredJdkVersion)
             .flatMap(root -> findJavaHome(root)
@@ -110,115 +112,9 @@ public class ZjdkSync implements Runnable {
         }
     }
 
-
-    public enum SearchMode {
-        /**
-         * Check <code>~/.zjdk/config.properties</code> only.
-         * */
-        USER_HOME,
-        /**
-         * Start in the current working directory and walk upward,
-         * <strong>skipping</strong> the user’s home directory if encountered,
-         * then continue up to the filesystem root
-         * */
-        WORKSPACE,
-        /**
-         * Start in the current working directory and walk upward through
-         * <strong>every</strong> ancestor directory, all the way to the
-         * filesystem root.
-         */
-        FULL_TREE
-    }
-
-    /**
-     * Locate the directory that contains a *zjdk* configuration.
-     *
-     * if {@code global == true}) checks only the user’s home directory for {@code ~/.zjdk/config.properties}; otherwise
-     * starts in the current working directory and walks up the filesystem hierarchy, ignoring the user’s home directory
-     * and stops before the filesystem root, returning the first ancestor that contains {@code .zjdk/config.properties}.
-     *
-     * @param global {@code true} to search exclusively in the user’s home
-     *               directory; {@code false} to search upward from the current
-     *               directory (excluding the home directory).
-     * @return an {@link Optional} with the path of the directory that holds the
-     *         zjdk configuration, or {@link Optional#empty()} if none is found
-     */
-//    public static Path findZjdkConfiguration(boolean global) {
-//        Path home = Path.of(System.getProperty("user.home"));
-//
-//        Path path = global
-//            ? home
-//            : Path.of(".").toAbsolutePath();
-//
-//        do {
-//            if (global || !path.equals(home)) {
-//                Path config = path.resolve(".zjdk", "config.properties");
-//
-//                if (config.toFile().exists()) {
-//                    return config;
-//                }
-//            }
-//            path = path.getParent();
-//        } while(!global && !path.equals(Path.of("/")));
-//
-//        throw new ConfigurationNotFoundException();
-//    }
-
-    /**
-     * Locate the directory that contains a *zjdk* configuration file.
-     *
-     * <ul>
-     *   <li>{@link SearchMode#USER_HOME} &nbsp;→&nbsp; check <code>~/.zjdk/config.properties</code> only.</li>
-     *   <li>{@link SearchMode#WORKSPACE} &nbsp;→&nbsp; walk up from the current directory,
-     *       <b>stopping before</b> the user’s home directory.</li>
-     *   <li>{@link SearchMode#FULL_TREE} &nbsp;→&nbsp; walk up from the current directory
-     *       <b>through</b> the user’s home directory and on to the filesystem root.</li>
-     * </ul>
-     *
-     * @param mode search strategy (never {@code null})
-     * @return a {@link Path} to the first matching <code>config.properties</code>
-     * @throws ConfigurationNotFoundException if no configuration could be located
-     */
-    public static Path findZjdkConfiguration(SearchMode mode) {
-        Objects.requireNonNull(mode, "mode");
-
-        Path home = Path.of(System.getProperty("user.home")).toAbsolutePath();
-        Path path = (mode == SearchMode.USER_HOME)
-            ? home
-            : Path.of(".").toAbsolutePath().normalize();
-
-        while (path != null) {
-            if (mode != SearchMode.WORKSPACE || !path.equals(home)) {
-                Path candidate = path.resolve(".zjdk").resolve("config.properties");
-                if (Files.exists(candidate)) {
-                    return candidate;
-                }
-            }
-
-            if (mode == SearchMode.USER_HOME || path.getParent() == null) {
-                break;
-            }
-
-            path = path.getParent();
-        }
-
-        throw new ConfigurationNotFoundException();
-    }
-
-
-    @SneakyThrows
-    public static String findVersionInConfig(Path configFile) {
-        Properties properties = new Properties();
-        properties.load(new FileReader(configFile.toFile()));
-
-        return Optional.ofNullable(properties.getProperty("version"))
-            .orElseThrow(ConfigurationNotFoundException::new);
-    }
-
-    private JdkVersion findConfiguredJdkVersion(Path root) {
-        String identifier = findVersionInConfig(root);
-
-        return catalogRepository.findByIdentifier(detectOperatingSystem(), detectProcessorArchitecture(), identifier)
+    private JdkVersion findConfiguredJdkVersion(String identifier) {
+        return catalogRepository
+            .findByIdentifier(detectOperatingSystem(), detectProcessorArchitecture(), identifier)
             .orElseThrow(() -> new UnsupportedIdentifierException(identifier));
     }
 
