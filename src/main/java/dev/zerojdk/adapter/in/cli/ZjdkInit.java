@@ -1,5 +1,6 @@
 package dev.zerojdk.adapter.in.cli;
 
+import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.service.ConfigService;
 import dev.zerojdk.domain.service.ManifestSyncService;
 import lombok.RequiredArgsConstructor;
@@ -21,9 +22,11 @@ public class ZjdkInit implements Runnable {
     public void run() {
         System.out.print("Initializing ZJDK... ");
 
+        Platform platform = Platform.detect();
+
         try {
-            configService.createConfiguration(version, global);
-            manifestSyncService.sync(global);
+            configService.createConfiguration(platform, version, global);
+            manifestSyncService.sync(platform, global);
 
             System.out.println("done");
         } catch (Exception ex) {

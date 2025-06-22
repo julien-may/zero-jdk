@@ -1,5 +1,6 @@
 package dev.zerojdk.adapter.in.cli;
 
+import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.service.ManifestSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -16,6 +17,7 @@ public class ZjdkSync implements Runnable {
     @SneakyThrows
     @Override
     public void run() {
-        manifestSyncService.sync(global);
+        Platform platform = Platform.detect();
+        manifestSyncService.sync(platform, global);
     }
 }

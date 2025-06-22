@@ -2,6 +2,7 @@ package dev.zerojdk.domain.service;
 
 import dev.zerojdk.domain.model.InstallationRecord;
 import dev.zerojdk.domain.model.JdkRelease;
+import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import dev.zerojdk.domain.port.out.download.DownloadService;
 import dev.zerojdk.domain.model.JdkVersion;
@@ -16,9 +17,6 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static dev.zerojdk.utils.OperatingSystem.detectOperatingSystem;
-import static dev.zerojdk.utils.ProcessorArchitecture.detectProcessorArchitecture;
-
 @RequiredArgsConstructor
 public class JdkReleaseService {
     private final DownloadService downloadService;
@@ -27,7 +25,7 @@ public class JdkReleaseService {
     private final RegistrationRepository repository;
 
     public void ensureRelease(JdkVersion version) {
-        if (findJdkRelease(version.getIdentifier()).isPresent()) {
+        if (findJdkRelease(version.getPlatform(), version.getIdentifier()).isPresent()) {
             return;
         }
 
@@ -37,10 +35,10 @@ public class JdkReleaseService {
             repository.register(new InstallationRecord(version.getIdentifier(), path, javaHome)));
     }
 
-    public Optional<JdkRelease> findJdkRelease(String identifier) {
+    public Optional<JdkRelease> findJdkRelease(Platform platform, String identifier) {
         return repository.find(identifier)
             .flatMap(installationRecord ->
-                catalogRepository.findByIdentifier(detectOperatingSystem(), detectProcessorArchitecture(), installationRecord.identifier())
+                catalogRepository.findByIdentifier(platform, installationRecord.identifier())
                     .map(jdkVersion -> new JdkRelease(jdkVersion, installationRecord.installRoot(), installationRecord.javaHome()))
             );
     }

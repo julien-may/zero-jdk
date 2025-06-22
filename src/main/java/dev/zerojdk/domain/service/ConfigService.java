@@ -7,8 +7,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
 
-import static dev.zerojdk.utils.OperatingSystem.detectOperatingSystem;
-import static dev.zerojdk.utils.ProcessorArchitecture.detectProcessorArchitecture;
+import dev.zerojdk.domain.model.Platform;
 
 @RequiredArgsConstructor
 public class ConfigService {
@@ -19,22 +18,22 @@ public class ConfigService {
         return configRepository.readVersion(global);
     }
 
-    public void updateConfiguration(String identifier, boolean global) {
-        catalogRepository.findByIdentifier(detectOperatingSystem(), detectProcessorArchitecture(), identifier)
+    public void updateConfiguration(Platform platform, String identifier, boolean global) {
+        catalogRepository.findByIdentifier(platform, identifier)
             .orElseThrow(() -> new UnsupportedIdentifierException(identifier));
 
         configRepository.writeVersion(global, identifier);
     }
 
-    public void createConfiguration(String identifier, boolean global) {
+    public void createConfiguration(Platform platform, String identifier, boolean global) {
         if (identifier == null) {
-            identifier = catalogRepository.findLatestByDistribution(detectOperatingSystem(), detectProcessorArchitecture(), "Temurin").stream()
+            identifier = catalogRepository.findLatestByDistribution(platform, "Temurin").stream()
                 .filter(jdkVersion -> jdkVersion.getSupport() == JdkVersion.Support.LTS)
                 .map(JdkVersion::getIdentifier)
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("There was an issue resolving the default identifier"));
         }
 
-        updateConfiguration(identifier, global);
+        updateConfiguration(platform, identifier, global);
     }
 }

@@ -6,7 +6,7 @@ public enum OperatingSystem {
     WINDOWS,
     AIX;
 
-    public static OperatingSystem detectOperatingSystem() {
+    public static OperatingSystem detect() {
         String os = System.getProperty("os.name").toLowerCase();
 
         if (os.contains("linux")) {

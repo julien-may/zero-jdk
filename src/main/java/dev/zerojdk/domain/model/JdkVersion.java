@@ -1,7 +1,5 @@
 package dev.zerojdk.domain.model;
 
-import dev.zerojdk.utils.OperatingSystem;
-import dev.zerojdk.utils.ProcessorArchitecture;
 import lombok.Data;
 
 @Data
@@ -14,8 +12,7 @@ public class JdkVersion {
     private String identifier;
     private Support support;
     private String link;
-    private OperatingSystem operatingSystem;
-    private ProcessorArchitecture architecture;
+    private Platform platform;
     private String indirectDownloadUri;
     private String archiveType;
 

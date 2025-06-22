@@ -17,7 +17,7 @@ public enum ProcessorArchitecture {
     //"x86"
 
 
-    public static ProcessorArchitecture detectProcessorArchitecture() {
+    public static ProcessorArchitecture detect() {
         String architecture = System.getProperty("os.arch").toLowerCase();
 
         if (architecture.contains("aarch64")) {

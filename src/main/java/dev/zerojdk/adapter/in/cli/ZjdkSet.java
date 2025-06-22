@@ -1,5 +1,6 @@
 package dev.zerojdk.adapter.in.cli;
 
+import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.service.ConfigService;
 import dev.zerojdk.domain.service.ManifestSyncService;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +22,10 @@ public class ZjdkSet {
 
         @Override
         public void run() {
-            configService.updateConfiguration(version, global);
-            manifestSyncService.sync(global);
+            Platform platform = Platform.detect();
+
+            configService.updateConfiguration(platform, version, global);
+            manifestSyncService.sync(platform, global);
         }
     }
 }

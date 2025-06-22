@@ -1,5 +1,6 @@
 package dev.zerojdk.adapter.in.cli;
 
+import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.service.ConfigurationNotFoundException;
 import dev.zerojdk.domain.service.ConfigService;
 import dev.zerojdk.domain.service.JdkReleaseService;
@@ -18,7 +19,7 @@ public class ZjdkEnv implements Runnable {
             .or(() -> configService.getActiveVersion(true))
             .orElseThrow(ConfigurationNotFoundException::new);
 
-        jdkReleaseService.findJdkRelease(version).ifPresent(release -> {
+        jdkReleaseService.findJdkRelease(Platform.detect(), version).ifPresent(release -> {
             System.out.printf("export JAVA_HOME=\"%s\"\n", release.javaHome());
             System.out.println("export PATH=\"$JAVA_HOME/bin:$PATH\"");
         });

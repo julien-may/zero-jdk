@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import dev.zerojdk.adapter.out.catalog.model.JsonJdkVersion;
 import dev.zerojdk.domain.model.JdkVersion;
+import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import dev.zerojdk.utils.OperatingSystem;
 import dev.zerojdk.utils.ProcessorArchitecture;
@@ -27,23 +28,23 @@ public class JsonCatalogRepository implements CatalogRepository {
     private final File catalogFile;
 
     @Override
-    public Map<String, List<JdkVersion>> findAll(OperatingSystem os, ProcessorArchitecture arch) {
+    public Map<String, List<JdkVersion>> findAll(Platform platform) {
         return readAll().stream()
             .filter(jdkVersion ->
-                jdkVersion.getOperatingSystem() == os && jdkVersion.getArchitecture() == arch)
+                jdkVersion.getPlatform().equals(platform))
             .collect(groupingBy(JdkVersion::getDistribution));
     }
 
     @Override
-    public List<JdkVersion> findAllByDistribution(OperatingSystem os, ProcessorArchitecture arch, String distribution) {
-        return findAll(os, arch).getOrDefault(distribution, List.of());
+    public List<JdkVersion> findAllByDistribution(Platform platform, String distribution) {
+        return findAll(platform).getOrDefault(distribution, List.of());
     }
 
     @Override
-    public Map<String, List<JdkVersion>> findLatest(OperatingSystem os, ProcessorArchitecture arch) {
+    public Map<String, List<JdkVersion>> findLatest(Platform platform) {
         return readAll().stream()
             .filter(jdkVersion ->
-                jdkVersion.getOperatingSystem() == os && jdkVersion.getArchitecture() == arch)
+                jdkVersion.getPlatform().equals(platform))
             .collect(groupingBy(JdkVersion::getDistribution,
                 collectingAndThen(
                     groupingBy(JdkVersion::getSupport,
@@ -64,16 +65,15 @@ public class JsonCatalogRepository implements CatalogRepository {
     }
 
     @Override
-    public List<JdkVersion> findLatestByDistribution(OperatingSystem os, ProcessorArchitecture arch, String distribution) {
-        return findLatest(os, arch).getOrDefault(distribution, List.of());
+    public List<JdkVersion> findLatestByDistribution(Platform platform, String distribution) {
+        return findLatest(platform).getOrDefault(distribution, List.of());
     }
 
     @Override
-    public Optional<JdkVersion> findByIdentifier(OperatingSystem os, ProcessorArchitecture arch, String identifier) {
+    public Optional<JdkVersion> findByIdentifier(Platform platform, String identifier) {
         return readAll().stream()
             .filter(jdkVersion -> jdkVersion.getIdentifier().equals(identifier))
-            .filter(jdkVersion -> jdkVersion.getOperatingSystem().equals(os))
-            .filter(jdkVersion -> jdkVersion.getArchitecture().equals(arch))
+            .filter(jdkVersion -> jdkVersion.getPlatform().equals(platform))
             .findFirst();
     }
 
@@ -101,17 +101,19 @@ public class JsonCatalogRepository implements CatalogRepository {
             default -> null;
         });
         jdkVersion.setLink(jsonJdkVersion.getLink());
-        jdkVersion.setOperatingSystem(switch (jsonJdkVersion.getOperatingSystem()) {
-            case "linux" -> OperatingSystem.LINUX;
-            case "windows" -> OperatingSystem.WINDOWS;
-            case "macos" -> OperatingSystem.MACOS;
-            case "aix" -> OperatingSystem.AIX;
-            default -> null;
-        });
-        jdkVersion.setArchitecture(switch (jsonJdkVersion.getArchitecture()) {
-            case "aarch64" -> ProcessorArchitecture.AARCH64;
-            default -> null;
-        });
+        jdkVersion.setPlatform(new Platform(
+            switch (jsonJdkVersion.getOperatingSystem()) {
+                case "linux" -> OperatingSystem.LINUX;
+                case "windows" -> OperatingSystem.WINDOWS;
+                case "macos" -> OperatingSystem.MACOS;
+                case "aix" -> OperatingSystem.AIX;
+                default -> null;
+            },
+            switch (jsonJdkVersion.getArchitecture()) {
+                case "aarch64" -> ProcessorArchitecture.AARCH64;
+                default -> null;
+            }
+        ));
         jdkVersion.setIndirectDownloadUri(jsonJdkVersion.getIndirectDownloadUri());
         jdkVersion.setArchiveType(jsonJdkVersion.getArchiveType());
 

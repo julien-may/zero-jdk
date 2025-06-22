@@ -1,9 +1,8 @@
 package dev.zerojdk.adapter.in.cli;
 
 import dev.zerojdk.domain.model.JdkVersion;
+import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
-import dev.zerojdk.utils.OperatingSystem;
-import dev.zerojdk.utils.ProcessorArchitecture;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import picocli.CommandLine;
@@ -40,12 +39,11 @@ public class ZjdkList {
         @SneakyThrows
         @Override
         public void run() {
-            OperatingSystem operatingSystem = OperatingSystem.detectOperatingSystem();
-            ProcessorArchitecture processorArchitecture = ProcessorArchitecture.detectProcessorArchitecture();
+            Platform platform = Platform.detect();
 
             if (distribution == null) {
                 Map<String, List<JdkVersion>> latestByDistro =
-                    catalogRepository.findLatest(operatingSystem, processorArchitecture);
+                    catalogRepository.findLatest(platform);
 
                 latestByDistro.keySet().stream().sorted(Comparator.naturalOrder())
                     .forEach(distribution -> {
@@ -56,10 +54,10 @@ public class ZjdkList {
                     });
             } else {
                 List<JdkVersion> versions = all
-                    ? catalogRepository.findAllByDistribution(operatingSystem, processorArchitecture, distribution).stream()
+                    ? catalogRepository.findAllByDistribution(platform, distribution).stream()
                         .sorted(Comparator.comparing(JdkVersion::getDistributionVersion))
                         .toList()
-                    : catalogRepository.findLatestByDistribution(operatingSystem, processorArchitecture, distribution);
+                    : catalogRepository.findLatestByDistribution(platform, distribution);
 
                 Comparator<JdkVersion> comparator = all
                     ? Comparator.comparing(JdkVersion::getDistributionVersion).reversed()
@@ -87,7 +85,7 @@ public class ZjdkList {
                     latest.setIdentifier(a.stream()
                         .map(JdkVersion::getIdentifier)
                         .collect(Collectors.joining(" ")));
-                    latest.setArchitecture(first.getArchitecture());
+                    latest.setPlatform(first.getPlatform());
                     latest.setSupport(first.getSupport());
                     latest.setSupport(first.getSupport());
                     latest.setLink(first.getLink());
