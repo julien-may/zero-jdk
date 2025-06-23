@@ -2,7 +2,7 @@ package dev.zerojdk.adapter.in.cli;
 
 import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.model.Platform;
-import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
+import dev.zerojdk.domain.service.CatalogService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import picocli.CommandLine;
@@ -29,7 +29,7 @@ public class ZjdkList {
     @RequiredArgsConstructor
     @CommandLine.Command(name = "available", header = "Show available JDKs")
     public static class Available implements Runnable {
-        private final CatalogRepository catalogRepository;
+        private final CatalogService catalogService;
 
         @CommandLine.Option(names = {"--dist"}, description = "The distribution")
         private String distribution;
@@ -43,7 +43,7 @@ public class ZjdkList {
 
             if (distribution == null) {
                 Map<String, List<JdkVersion>> latestByDistro =
-                    catalogRepository.findLatest(platform);
+                    catalogService.findLatest(platform);
 
                 latestByDistro.keySet().stream().sorted(Comparator.naturalOrder())
                     .forEach(distribution -> {
@@ -54,10 +54,10 @@ public class ZjdkList {
                     });
             } else {
                 List<JdkVersion> versions = all
-                    ? catalogRepository.findAllByDistribution(platform, distribution).stream()
+                    ? catalogService.findAllByDistribution(platform, distribution).stream()
                         .sorted(Comparator.comparing(JdkVersion::getDistributionVersion))
                         .toList()
-                    : catalogRepository.findLatestByDistribution(platform, distribution);
+                    : catalogService.findLatestByDistribution(platform, distribution);
 
                 Comparator<JdkVersion> comparator = all
                     ? Comparator.comparing(JdkVersion::getDistributionVersion).reversed()

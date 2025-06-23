@@ -53,7 +53,7 @@ public class Application implements Runnable {
                 context.getJdkReleaseService()))
             .addSubcommand("list", new CommandLine(new ZjdkList())
                 .addSubcommand("available", new ZjdkList.Available(
-                    context.getCatalogRepository())))
+                    context.getCatalogService())))
             .addSubcommand("shell", new ZjdkShell())
             .addSubcommand("update", new ZjdkUpdate())
             .addSubcommand(new CommandLine.HelpCommand())

@@ -1,7 +1,6 @@
 package dev.zerojdk.domain.service;
 
 import dev.zerojdk.domain.model.JdkVersion;
-import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import dev.zerojdk.domain.port.out.config.ConfigRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -12,14 +11,14 @@ import dev.zerojdk.domain.model.Platform;
 @RequiredArgsConstructor
 public class ConfigService {
     private final ConfigRepository configRepository;
-    private final CatalogRepository catalogRepository;
+    private final CatalogService catalogService;
 
     public Optional<String> getActiveVersion(boolean global) {
         return configRepository.readVersion(global);
     }
 
     public void updateConfiguration(Platform platform, String identifier, boolean global) {
-        catalogRepository.findByIdentifier(platform, identifier)
+        catalogService.findByIdentifier(platform, identifier)
             .orElseThrow(() -> new UnsupportedIdentifierException(identifier));
 
         configRepository.writeVersion(global, identifier);
@@ -27,7 +26,7 @@ public class ConfigService {
 
     public void createConfiguration(Platform platform, String identifier, boolean global) {
         if (identifier == null) {
-            identifier = catalogRepository.findLatestByDistribution(platform, "Temurin").stream()
+            identifier = catalogService.findLatestByDistribution(platform, "Temurin").stream()
                 .filter(jdkVersion -> jdkVersion.getSupport() == JdkVersion.Support.LTS)
                 .map(JdkVersion::getIdentifier)
                 .findFirst()

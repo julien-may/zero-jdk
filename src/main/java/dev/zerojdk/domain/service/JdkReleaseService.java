@@ -3,7 +3,6 @@ package dev.zerojdk.domain.service;
 import dev.zerojdk.domain.model.InstallationRecord;
 import dev.zerojdk.domain.model.JdkRelease;
 import dev.zerojdk.domain.model.Platform;
-import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import dev.zerojdk.domain.port.out.download.DownloadService;
 import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.port.out.index.RegistrationRepository;
@@ -21,7 +20,7 @@ import java.util.stream.Stream;
 public class JdkReleaseService {
     private final DownloadService downloadService;
     private final UnarchiverFactory unarchiverFactory;
-    private final CatalogRepository catalogRepository;
+    private final CatalogService catalogService;
     private final RegistrationRepository repository;
 
     public void ensureRelease(JdkVersion version) {
@@ -38,7 +37,7 @@ public class JdkReleaseService {
     public Optional<JdkRelease> findJdkRelease(Platform platform, String identifier) {
         return repository.find(identifier)
             .flatMap(installationRecord ->
-                catalogRepository.findByIdentifier(platform, installationRecord.identifier())
+                catalogService.findByIdentifier(platform, installationRecord.identifier())
                     .map(jdkVersion -> new JdkRelease(jdkVersion, installationRecord.installRoot(), installationRecord.javaHome()))
             );
     }

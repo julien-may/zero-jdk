@@ -1,5 +1,6 @@
 package dev.zerojdk.infrastructure.unarchiver;
 
+import dev.zerojdk.infrastructure.unarchiver.compression.Compression;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;

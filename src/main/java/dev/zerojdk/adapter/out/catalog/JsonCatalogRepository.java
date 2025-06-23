@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import dev.zerojdk.adapter.out.catalog.model.JsonJdkVersion;
+import dev.zerojdk.adapter.out.catalog.provider.CatalogStorageProvider;
 import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
@@ -12,7 +13,6 @@ import dev.zerojdk.utils.ProcessorArchitecture;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
-import java.io.File;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +25,7 @@ public class JsonCatalogRepository implements CatalogRepository {
     private static final ObjectMapper MAPPER = new ObjectMapper()
         .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
-    private final File catalogFile;
+    private final CatalogStorageProvider catalogStorageProvider;
 
     @Override
     public Map<String, List<JdkVersion>> findAll(Platform platform) {
@@ -80,7 +80,7 @@ public class JsonCatalogRepository implements CatalogRepository {
 
     @SneakyThrows
     private List<JdkVersion> readAll() {
-        return MAPPER.readValue(catalogFile,
+        return MAPPER.readValue(catalogStorageProvider.provide().toFile(),
                 new TypeReference<List<JsonJdkVersion>>() {}).stream()
             .map(this::map)
             .toList();
