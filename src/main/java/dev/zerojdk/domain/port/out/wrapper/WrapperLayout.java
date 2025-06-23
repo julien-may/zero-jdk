@@ -1,0 +1,10 @@
+package dev.zerojdk.domain.port.out.wrapper;
+
+import java.nio.file.Path;
+
+public interface WrapperLayout {
+    Path wrapperDirectory();
+    Path binaryPath();
+    Path configPath();
+    Path scriptPath();
+}

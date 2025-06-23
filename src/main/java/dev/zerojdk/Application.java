@@ -9,7 +9,7 @@ import dev.zerojdk.adapter.in.cli.ZjdkShell;
 import dev.zerojdk.adapter.in.cli.ZjdkSync;
 import dev.zerojdk.adapter.in.cli.ZjdkWrapper;
 
-import dev.zerojdk.adapter.out.RecursiveLayoutLocator;
+import dev.zerojdk.adapter.out.FsProjectLayout;
 import dev.zerojdk.adapter.out.catalog.FsCatalogMetadataRepository;
 import dev.zerojdk.adapter.out.catalog.JsonCatalogRepository;
 import dev.zerojdk.adapter.out.catalog.provider.CatalogStorageProvider;
@@ -17,20 +17,14 @@ import dev.zerojdk.adapter.out.catalog.provider.JsonCatalogStorageProvider;
 import dev.zerojdk.adapter.out.config.FsConfigRepository;
 import dev.zerojdk.adapter.out.download.HttpDownloadService;
 import dev.zerojdk.adapter.out.index.FsRegistrationRepository;
-import dev.zerojdk.adapter.out.wrapper.FsWrapperBinaryRepository;
-import dev.zerojdk.adapter.out.wrapper.FsWrapperConfigRepository;
-import dev.zerojdk.adapter.out.wrapper.FsWrapperScriptRepository;
-import dev.zerojdk.adapter.out.wrapper.WrapperReleaseLocatorAdapter;
+import dev.zerojdk.adapter.out.wrapper.*;
 import dev.zerojdk.domain.port.out.ProjectLayout;
 import dev.zerojdk.domain.port.out.catalog.CatalogMetadataRepository;
 import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import dev.zerojdk.domain.port.out.config.ConfigRepository;
 import dev.zerojdk.domain.port.out.download.DownloadService;
 import dev.zerojdk.domain.port.out.index.RegistrationRepository;
-import dev.zerojdk.domain.port.out.wrapper.WrapperBinaryRepository;
-import dev.zerojdk.domain.port.out.wrapper.WrapperConfigRepository;
-import dev.zerojdk.domain.port.out.wrapper.WrapperReleaseLocator;
-import dev.zerojdk.domain.port.out.wrapper.WrapperScriptRepository;
+import dev.zerojdk.domain.port.out.wrapper.*;
 import dev.zerojdk.domain.service.*;
 import dev.zerojdk.infrastructure.unarchiver.UnarchiverFactory;
 import picocli.CommandLine;
@@ -49,7 +43,7 @@ public class Application implements Runnable {
 
     public static void main(String[] args) {
         // Infra setup
-        ProjectLayout projectLayout = new RecursiveLayoutLocator();
+        ProjectLayout projectLayout = new FsProjectLayout();
         DownloadService downloadService = new HttpDownloadService();
         UnarchiverFactory unarchiverFactory = new UnarchiverFactory();
 
@@ -68,17 +62,19 @@ public class Application implements Runnable {
         ManifestSyncService manifestSyncService = new ManifestSyncService(catalogService, configService, jdkReleaseService);
 
         // Wrapper
+        WrapperLayout wrapperLayout = new FsWrapperLayout(projectLayout);
         WrapperBinaryRepository wrapperBinaryRepository = new FsWrapperBinaryRepository(projectLayout);
-        WrapperConfigRepository wrapperConfigRepository = new FsWrapperConfigRepository(projectLayout);
+        WrapperConfigRepository wrapperConfigRepository = new FsWrapperConfigRepository(wrapperLayout);
         WrapperScriptRepository wrapperScriptRepository = new FsWrapperScriptRepository(projectLayout);
         WrapperReleaseLocator wrapperReleaseLocator = new WrapperReleaseLocatorAdapter();
-        WrapperService wrapperService = new WrapperService(wrapperBinaryRepository, wrapperConfigRepository, wrapperScriptRepository, wrapperReleaseLocator, projectLayout);
+        WrapperScriptGenerator wrapperScriptGenerator = new WrapperScriptGenerator(wrapperLayout, wrapperBinaryRepository);
+        WrapperInstaller wrapperInstaller = new WrapperInstaller(wrapperConfigRepository, wrapperScriptRepository, wrapperReleaseLocator, wrapperScriptGenerator);
 
         // CLI setup
         CommandLine commandLine = new CommandLine(new Application())
             .addSubcommand("init", new ZjdkInit(configService, manifestSyncService))
             .addSubcommand("sync", new ZjdkSync(manifestSyncService))
-            .addSubcommand("wrapper", new ZjdkWrapper(wrapperService))
+            .addSubcommand("wrapper", new ZjdkWrapper(wrapperInstaller))
             .addSubcommand("set", new CommandLine(new ZjdkSet())
                 .addSubcommand("version", new ZjdkSet.Version(configService, manifestSyncService)))
             .addSubcommand("env", new ZjdkEnv(configService, jdkReleaseService))

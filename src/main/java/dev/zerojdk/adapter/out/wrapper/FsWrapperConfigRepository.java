@@ -1,9 +1,8 @@
 package dev.zerojdk.adapter.out.wrapper;
 
 import dev.zerojdk.domain.model.WrapperConfig;
-import dev.zerojdk.domain.port.out.ProjectLayout;
 import dev.zerojdk.domain.port.out.wrapper.WrapperConfigRepository;
-import dev.zerojdk.domain.service.ConfigurationNotFoundException;
+import dev.zerojdk.domain.port.out.wrapper.WrapperLayout;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
@@ -16,56 +15,38 @@ import java.util.Properties;
 
 @RequiredArgsConstructor
 public class FsWrapperConfigRepository implements WrapperConfigRepository {
-    private static final String FILE_NAME = "zjdk-wrapper.properties";
+    private final WrapperLayout wrapperLayout;
 
-    private final ProjectLayout projectLayout;
-
-    @Override
-    public String propertiesFileName() {
-        return FILE_NAME;
-    }
-
+    @SneakyThrows
     @Override
     public Optional<WrapperConfig> read() {
-        return propertiesLocation()
-            .filter(Files::exists)
-            .map(this::read);
+        Path path = wrapperLayout.configPath();
+
+        if (!Files.exists(path)) {
+            return Optional.empty();
+        }
+
+        try (InputStream in = Files.newInputStream(path)) {
+            Properties properties = new Properties();
+            properties.load(in);
+
+            return Optional.of(new WrapperConfig(properties.getProperty("url")));
+        }
     }
 
     @SneakyThrows
     @Override
-    public void write(WrapperConfig wrapperConfig) {
-        Path configPath = propertiesLocation(projectLayout.findProjectRoot(false)
-            .orElseThrow(ConfigurationNotFoundException::new));  // TODO: Use different exception
-
+    public WrapperConfig write(WrapperConfig wrapperConfig) {
+        Path configPath = wrapperLayout.configPath();
         Files.createDirectories(configPath.getParent());
 
-        Properties properties = new Properties();
-        properties.setProperty("url", wrapperConfig.url());
+        Properties props = new Properties();
+        props.setProperty("url", wrapperConfig.url());
 
         try (OutputStream out = Files.newOutputStream(configPath)) {
-            properties.store(out, null);
-        }
-    }
-
-    private Optional<Path> propertiesLocation() {
-        return projectLayout.findProjectRoot(false)
-            .map(this::propertiesLocation);
-    }
-
-    private Path propertiesLocation(Path parent) {
-        return parent.resolve(".zjdk/wrapper/", FILE_NAME);
-    }
-
-    @SneakyThrows
-    private WrapperConfig read(Path path) {
-        Properties properties = new Properties();
-
-        try (InputStream in = Files.newInputStream(path)) {
-            properties.load(in);
+            props.store(out, null);
         }
 
-        return new WrapperConfig(
-            properties.getProperty("url"));
+        return wrapperConfig;
     }
 }
