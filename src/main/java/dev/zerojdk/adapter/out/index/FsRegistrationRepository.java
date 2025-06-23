@@ -11,7 +11,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Properties;
 
-public class PropertiesRegistrationRepository implements RegistrationRepository {
+public class FsRegistrationRepository implements RegistrationRepository {
     private static final File ZJDK_FOLDER = new File(System.getProperty("user.home"), ".zjdk");
     private static final File RELEASES_FOLDER = new File(ZJDK_FOLDER, "releases");
 

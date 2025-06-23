@@ -42,7 +42,8 @@ public class Application implements Runnable {
                 context.getManifestSyncService()))
             .addSubcommand("sync", new ZjdkSync(
                 context.getManifestSyncService()))
-            .addSubcommand("wrapper", new ZjdkWrapper())
+            .addSubcommand("wrapper", new ZjdkWrapper(
+                context.getWrapperService()))
             .addSubcommand("set", new CommandLine(new ZjdkSet())
                 .addSubcommand("version", new ZjdkSet.Version(
                     context.getConfigService(),
