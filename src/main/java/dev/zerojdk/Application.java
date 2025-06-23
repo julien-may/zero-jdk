@@ -9,9 +9,30 @@ import dev.zerojdk.adapter.in.cli.ZjdkShell;
 import dev.zerojdk.adapter.in.cli.ZjdkSync;
 import dev.zerojdk.adapter.in.cli.ZjdkWrapper;
 
-import dev.zerojdk.domain.service.ConfigurationNotFoundException;
-import dev.zerojdk.domain.service.UnsupportedIdentifierException;
-import dev.zerojdk.infrastructure.configuration.ApplicationContext;
+import dev.zerojdk.adapter.out.RecursiveLayoutLocator;
+import dev.zerojdk.adapter.out.catalog.FsCatalogMetadataRepository;
+import dev.zerojdk.adapter.out.catalog.JsonCatalogRepository;
+import dev.zerojdk.adapter.out.catalog.provider.CatalogStorageProvider;
+import dev.zerojdk.adapter.out.catalog.provider.JsonCatalogStorageProvider;
+import dev.zerojdk.adapter.out.config.FsConfigRepository;
+import dev.zerojdk.adapter.out.download.HttpDownloadService;
+import dev.zerojdk.adapter.out.index.FsRegistrationRepository;
+import dev.zerojdk.adapter.out.wrapper.FsWrapperBinaryRepository;
+import dev.zerojdk.adapter.out.wrapper.FsWrapperConfigRepository;
+import dev.zerojdk.adapter.out.wrapper.FsWrapperScriptRepository;
+import dev.zerojdk.adapter.out.wrapper.WrapperReleaseLocatorAdapter;
+import dev.zerojdk.domain.port.out.ProjectLayout;
+import dev.zerojdk.domain.port.out.catalog.CatalogMetadataRepository;
+import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
+import dev.zerojdk.domain.port.out.config.ConfigRepository;
+import dev.zerojdk.domain.port.out.download.DownloadService;
+import dev.zerojdk.domain.port.out.index.RegistrationRepository;
+import dev.zerojdk.domain.port.out.wrapper.WrapperBinaryRepository;
+import dev.zerojdk.domain.port.out.wrapper.WrapperConfigRepository;
+import dev.zerojdk.domain.port.out.wrapper.WrapperReleaseLocator;
+import dev.zerojdk.domain.port.out.wrapper.WrapperScriptRepository;
+import dev.zerojdk.domain.service.*;
+import dev.zerojdk.infrastructure.unarchiver.UnarchiverFactory;
 import picocli.CommandLine;
 
 import java.util.LinkedHashMap;
@@ -27,39 +48,54 @@ public class Application implements Runnable {
     private CommandLine.Model.CommandSpec spec;
 
     public static void main(String[] args) {
-        ApplicationContext context = new ApplicationContext();
+        // Infra setup
+        ProjectLayout projectLayout = new RecursiveLayoutLocator();
+        DownloadService downloadService = new HttpDownloadService();
+        UnarchiverFactory unarchiverFactory = new UnarchiverFactory();
 
+        // Catalog setup
+        CatalogMetadataRepository catalogMetadataRepository = new FsCatalogMetadataRepository();
+        CatalogDownloadService catalogDownloadService = new HttpCatalogDownloadService(downloadService, unarchiverFactory);
+        CatalogStorageProvider catalogStorageProvider = new JsonCatalogStorageProvider(catalogDownloadService, catalogMetadataRepository);
+        CatalogRepository catalogRepository = new JsonCatalogRepository(catalogStorageProvider);
+        CatalogService catalogService = new CatalogService(catalogRepository);
+
+        // Config and JDK services
+        ConfigRepository configRepository = new FsConfigRepository(projectLayout);
+        ConfigService configService = new ConfigService(configRepository, catalogService);
+        RegistrationRepository registrationRepository = new FsRegistrationRepository();
+        JdkReleaseService jdkReleaseService = new JdkReleaseService(downloadService, unarchiverFactory, catalogService, registrationRepository);
+        ManifestSyncService manifestSyncService = new ManifestSyncService(catalogService, configService, jdkReleaseService);
+
+        // Wrapper
+        WrapperBinaryRepository wrapperBinaryRepository = new FsWrapperBinaryRepository(projectLayout);
+        WrapperConfigRepository wrapperConfigRepository = new FsWrapperConfigRepository(projectLayout);
+        WrapperScriptRepository wrapperScriptRepository = new FsWrapperScriptRepository(projectLayout);
+        WrapperReleaseLocator wrapperReleaseLocator = new WrapperReleaseLocatorAdapter();
+        WrapperService wrapperService = new WrapperService(wrapperBinaryRepository, wrapperConfigRepository, wrapperScriptRepository, wrapperReleaseLocator, projectLayout);
+
+        // CLI setup
+        CommandLine commandLine = new CommandLine(new Application())
+            .addSubcommand("init", new ZjdkInit(configService, manifestSyncService))
+            .addSubcommand("sync", new ZjdkSync(manifestSyncService))
+            .addSubcommand("wrapper", new ZjdkWrapper(wrapperService))
+            .addSubcommand("set", new CommandLine(new ZjdkSet())
+                .addSubcommand("version", new ZjdkSet.Version(configService, manifestSyncService)))
+            .addSubcommand("env", new ZjdkEnv(configService, jdkReleaseService))
+            .addSubcommand("list", new CommandLine(new ZjdkList())
+                .addSubcommand("available", new ZjdkList.Available(catalogService)))
+            .addSubcommand("shell", new ZjdkShell())
+            .addSubcommand("update", new ZjdkUpdate(catalogMetadataRepository, catalogDownloadService))
+            .addSubcommand(new CommandLine.HelpCommand())
+            .setExecutionExceptionHandler(new ExecutionExceptionHandler());
+
+        // Help page rendering
         Map<String, List<String>> sections = new LinkedHashMap<>();
         sections.put("%nBootstrap%n", List.of("init", "sync", "wrapper"));
         sections.put("%nVersion Management%n", List.of("list", "set"));
         sections.put("%nEnvironment%n", List.of("env", "shell"));
         sections.put("%nMaintenance%n", List.of("update"));
         CommandGroupRenderer renderer = new CommandGroupRenderer(sections);
-
-        CommandLine commandLine = new CommandLine(new Application())
-            .addSubcommand("init", new ZjdkInit(
-                context.getConfigService(),
-                context.getManifestSyncService()))
-            .addSubcommand("sync", new ZjdkSync(
-                context.getManifestSyncService()))
-            .addSubcommand("wrapper", new ZjdkWrapper(
-                context.getWrapperService()))
-            .addSubcommand("set", new CommandLine(new ZjdkSet())
-                .addSubcommand("version", new ZjdkSet.Version(
-                    context.getConfigService(),
-                    context.getManifestSyncService())))
-            .addSubcommand("env", new ZjdkEnv(
-                context.getConfigService(),
-                context.getJdkReleaseService()))
-            .addSubcommand("list", new CommandLine(new ZjdkList())
-                .addSubcommand("available", new ZjdkList.Available(
-                    context.getCatalogService())))
-            .addSubcommand("shell", new ZjdkShell())
-            .addSubcommand("update", new ZjdkUpdate(
-                context.getCatalogMetadataRepository(),
-                context.getCatalogDownloadService()))
-            .addSubcommand(new CommandLine.HelpCommand())
-            .setExecutionExceptionHandler(new ExecutionExceptionHandler());
 
         commandLine.getHelpSectionMap().remove(SECTION_KEY_COMMAND_LIST_HEADING);
         commandLine.getHelpSectionMap().put(SECTION_KEY_COMMAND_LIST, renderer);
