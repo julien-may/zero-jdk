@@ -1,5 +1,5 @@
 package dev.zerojdk.domain.port.out.wrapper;
 
-public interface WrapperScriptStorePort {
+public interface WrapperScriptRepository {
     void save(String content);
 }

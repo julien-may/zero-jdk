@@ -1,7 +1,7 @@
 package dev.zerojdk.adapter.out.wrapper;
 
-import dev.zerojdk.domain.port.out.ProjectLayoutPort;
-import dev.zerojdk.domain.port.out.wrapper.WrapperScriptStorePort;
+import dev.zerojdk.domain.port.out.ProjectLayout;
+import dev.zerojdk.domain.port.out.wrapper.WrapperScriptRepository;
 import dev.zerojdk.domain.service.ConfigurationNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -13,13 +13,13 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.HashSet;
 
 @RequiredArgsConstructor
-public class FsWrapperScriptRepository implements WrapperScriptStorePort {
-    private final ProjectLayoutPort projectLayoutPort;
+public class FsWrapperScriptRepository implements WrapperScriptRepository {
+    private final ProjectLayout projectLayout;
 
     @SneakyThrows
     @Override
     public void save(String content) {
-        Path wrapperPath = wrapperPath(projectLayoutPort.findProjectRoot(false)
+        Path wrapperPath = wrapperPath(projectLayout.findProjectRoot(false)
             .orElseThrow(ConfigurationNotFoundException::new));// TODO: Use different exception
 
         Files.writeString(wrapperPath, content, StandardCharsets.UTF_8);

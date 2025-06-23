@@ -1,6 +1,6 @@
 package dev.zerojdk.adapter.out.config;
 
-import dev.zerojdk.domain.port.out.ProjectLayoutPort;
+import dev.zerojdk.domain.port.out.ProjectLayout;
 import dev.zerojdk.domain.port.out.config.ConfigRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -14,11 +14,11 @@ import java.util.Properties;
 
 @RequiredArgsConstructor
 public class FsConfigRepository implements ConfigRepository {
-    private final ProjectLayoutPort projectLayoutPort;
+    private final ProjectLayout projectLayout;
 
     @Override
     public Optional<String> readVersion(boolean global) {
-        return projectLayoutPort.findProjectRoot(global)
+        return projectLayout.findProjectRoot(global)
             .map(path -> path.resolve(".zjdk", "config.properties"))
             .flatMap(this::readVersionFromFile);
     }

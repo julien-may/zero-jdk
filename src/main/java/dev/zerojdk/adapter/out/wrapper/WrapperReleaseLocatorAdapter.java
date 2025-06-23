@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import dev.zerojdk.domain.model.Platform;
-import dev.zerojdk.domain.port.out.wrapper.WrapperReleaseLocatorPort;
+import dev.zerojdk.domain.port.out.wrapper.WrapperReleaseLocator;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
@@ -17,7 +17,7 @@ import java.time.Duration;
 import java.util.List;
 
 @RequiredArgsConstructor
-public class WrapperReleaseLocatorAdapter implements WrapperReleaseLocatorPort {
+public class WrapperReleaseLocatorAdapter implements WrapperReleaseLocator {
     private static final String REPO = "julien-may/zero-jdk";
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()

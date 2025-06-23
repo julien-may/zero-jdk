@@ -1,7 +1,7 @@
 package dev.zerojdk.adapter.out.wrapper;
 
-import dev.zerojdk.domain.port.out.ProjectLayoutPort;
-import dev.zerojdk.domain.port.out.wrapper.WrapperBinaryStorePort;
+import dev.zerojdk.domain.port.out.ProjectLayout;
+import dev.zerojdk.domain.port.out.wrapper.WrapperBinaryRepository;
 import dev.zerojdk.domain.service.ConfigurationNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -16,8 +16,8 @@ import java.util.HashSet;
 import java.util.Optional;
 
 @RequiredArgsConstructor
-public class FsWrapperBinaryRepository implements WrapperBinaryStorePort {
-    private final ProjectLayoutPort projectLayoutPort;
+public class FsWrapperBinaryRepository implements WrapperBinaryRepository {
+    private final ProjectLayout projectLayout;
 
     @Override
     public boolean exists() {
@@ -30,7 +30,7 @@ public class FsWrapperBinaryRepository implements WrapperBinaryStorePort {
     @SneakyThrows
     @Override
     public void save(InputStream in) {
-        Path binaryPath = binaryPath(projectLayoutPort.findProjectRoot(false)
+        Path binaryPath = binaryPath(projectLayout.findProjectRoot(false)
             .orElseThrow(ConfigurationNotFoundException::new)); // TODO: Use different exception
 
         Files.createDirectories(binaryPath.getParent());
@@ -48,7 +48,7 @@ public class FsWrapperBinaryRepository implements WrapperBinaryStorePort {
     }
 
     private Optional<Path> binaryLocation() {
-        return projectLayoutPort.findProjectRoot(false)
+        return projectLayout.findProjectRoot(false)
             .map(this::binaryPath);
     }
 

@@ -80,7 +80,7 @@ public class JsonCatalogRepository implements CatalogRepository {
 
     @SneakyThrows
     private List<JdkVersion> readAll() {
-        return MAPPER.readValue(catalogStorageProvider.provide().toFile(),
+        return MAPPER.readValue(catalogStorageProvider.provide().location().toFile(),
                 new TypeReference<List<JsonJdkVersion>>() {}).stream()
             .map(this::map)
             .toList();

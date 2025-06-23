@@ -55,7 +55,9 @@ public class Application implements Runnable {
                 .addSubcommand("available", new ZjdkList.Available(
                     context.getCatalogService())))
             .addSubcommand("shell", new ZjdkShell())
-            .addSubcommand("update", new ZjdkUpdate())
+            .addSubcommand("update", new ZjdkUpdate(
+                context.getCatalogMetadataRepository(),
+                context.getCatalogDownloadService()))
             .addSubcommand(new CommandLine.HelpCommand())
             .setExecutionExceptionHandler(new ExecutionExceptionHandler());
 

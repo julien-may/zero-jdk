@@ -4,7 +4,7 @@ import dev.zerojdk.domain.model.WrapperConfig;
 
 import java.util.Optional;
 
-public interface WrapperConfigStorePort {
+public interface WrapperConfigRepository {
     String propertiesFileName();
     Optional<WrapperConfig> read();
     void write(WrapperConfig url);

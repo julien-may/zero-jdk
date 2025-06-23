@@ -1,12 +1,12 @@
 package dev.zerojdk.adapter.out;
 
-import dev.zerojdk.domain.port.out.ProjectLayoutPort;
+import dev.zerojdk.domain.port.out.ProjectLayout;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-public class RecursiveLayoutLocator implements ProjectLayoutPort {
+public class RecursiveLayoutLocator implements ProjectLayout {
     /**
      * Locate the directory that contains a *zjdk* configuration.
      *

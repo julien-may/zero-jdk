@@ -2,11 +2,11 @@ package dev.zerojdk.domain.service;
 
 import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.model.WrapperConfig;
-import dev.zerojdk.domain.port.out.ProjectLayoutPort;
-import dev.zerojdk.domain.port.out.wrapper.WrapperReleaseLocatorPort;
-import dev.zerojdk.domain.port.out.wrapper.WrapperBinaryStorePort;
-import dev.zerojdk.domain.port.out.wrapper.WrapperConfigStorePort;
-import dev.zerojdk.domain.port.out.wrapper.WrapperScriptStorePort;
+import dev.zerojdk.domain.port.out.ProjectLayout;
+import dev.zerojdk.domain.port.out.wrapper.WrapperReleaseLocator;
+import dev.zerojdk.domain.port.out.wrapper.WrapperBinaryRepository;
+import dev.zerojdk.domain.port.out.wrapper.WrapperConfigRepository;
+import dev.zerojdk.domain.port.out.wrapper.WrapperScriptRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
@@ -14,30 +14,30 @@ import java.nio.file.Path;
 
 @RequiredArgsConstructor
 public class WrapperService {
-    private final WrapperBinaryStorePort wrapperBinaryStorePort;
-    private final WrapperConfigStorePort wrapperConfigStorePort;
-    private final WrapperScriptStorePort wrapperScriptStorePort;
-    private final WrapperReleaseLocatorPort wrapperReleaseLocatorPort;
-    private final ProjectLayoutPort projectLayoutPort;
+    private final WrapperBinaryRepository wrapperBinaryRepository;
+    private final WrapperConfigRepository wrapperConfigRepository;
+    private final WrapperScriptRepository wrapperScriptRepository;
+    private final WrapperReleaseLocator wrapperReleaseLocator;
+    private final ProjectLayout projectLayout;
 
     @SneakyThrows
     public void install(Platform platform) {
         // IMPROVEMENT: This right now uses the latest version, but maybe it makes sense to use the same version as the one with which
         // the wrapper was generated...
-        WrapperConfig wrapperConfig = wrapperConfigStorePort.read().orElseGet(() -> {
-            WrapperConfig config = new WrapperConfig(wrapperReleaseLocatorPort.findLatestUrl(platform));
-            wrapperConfigStorePort.write(config);
+        WrapperConfig wrapperConfig = wrapperConfigRepository.read().orElseGet(() -> {
+            WrapperConfig config = new WrapperConfig(wrapperReleaseLocator.findLatestUrl(platform));
+            wrapperConfigRepository.write(config);
             return config;
         });
 
-        wrapperScriptStorePort.save(buildShellScript(wrapperConfig.url()));
+        wrapperScriptRepository.save(buildShellScript(wrapperConfig.url()));
     }
 
     private String buildShellScript(String downloadUrl) {
-        Path projectRoot = projectLayoutPort.findProjectRoot(false)
+        Path projectRoot = projectLayout.findProjectRoot(false)
             .orElseThrow(); // TODO
 
-        Path relativizePathOfBinary = projectRoot.relativize(wrapperBinaryStorePort.executable());
+        Path relativizePathOfBinary = projectRoot.relativize(wrapperBinaryRepository.executable());
 
         return """
             #!/usr/bin/env sh
@@ -83,7 +83,7 @@ public class WrapperService {
             """.formatted(
                 relativizePathOfBinary.getParent(),
                 relativizePathOfBinary.getFileName(),
-                wrapperConfigStorePort.propertiesFileName(),
+                wrapperConfigRepository.propertiesFileName(),
                 downloadUrl);
     }
 }

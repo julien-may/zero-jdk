@@ -42,18 +42,18 @@ public class ZjdkList {
             Platform platform = Platform.detect();
 
             if (distribution == null) {
-                Map<String, List<JdkVersion>> latestByDistro =
+                Map<String, List<JdkVersion>> latestVersions =
                     catalogService.findLatest(platform);
 
-                latestByDistro.keySet().stream().sorted(Comparator.naturalOrder())
+                latestVersions.keySet().stream().sorted(Comparator.naturalOrder())
                     .forEach(distribution -> {
                         System.out.printf("%s\n", distribution);
 
-                        printVersions(latestByDistro.get(distribution), 2,
+                        printVersions(latestVersions.get(distribution), 2,
                             Comparator.comparingInt(lv -> JdkVersion.Support.LTS == lv.getSupport() ? 0 : 1));
                     });
             } else {
-                List<JdkVersion> versions = all
+                List<JdkVersion> allVersions = all
                     ? catalogService.findAllByDistribution(platform, distribution).stream()
                         .sorted(Comparator.comparing(JdkVersion::getDistributionVersion))
                         .toList()
@@ -63,7 +63,7 @@ public class ZjdkList {
                     ? Comparator.comparing(JdkVersion::getDistributionVersion).reversed()
                     : Comparator.comparingInt(lv -> JdkVersion.Support.LTS == lv.getSupport() ? 0 : 1);
 
-                printVersions(versions, 0, comparator);
+                printVersions(allVersions, 0, comparator);
             }
         }
 
@@ -98,7 +98,11 @@ public class ZjdkList {
                 .forEach(jdkVersion -> {
                     System.out.printf("%sVersion:       %s\n", whitespace, buildVersion(jdkVersion));
                     System.out.printf("%sIdentifier(s): %s\n", whitespace, jdkVersion.getIdentifier());
-                    System.out.printf("%sSupport:       %s\n", whitespace, jdkVersion.getSupport());
+                    System.out.printf("%sSupport:       %s\n", whitespace,
+                        switch (jdkVersion.getSupport()) {
+                            case LTS -> "LTS";
+                            case NON_LTS ->  "Non-LTS";
+                        });
                     System.out.printf("%sLink:          %s\n", whitespace, jdkVersion.getLink());
                     System.out.println();
                 });
