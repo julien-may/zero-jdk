@@ -1,19 +1,22 @@
 package dev.zerojdk.adapter.out.release;
 
-import dev.zerojdk.domain.port.out.ProjectLayout;
+import dev.zerojdk.domain.port.out.BaseLayout;
 import dev.zerojdk.domain.port.out.release.JdkReleaseLayout;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 @RequiredArgsConstructor
 public class FsJdkReleaseLayout implements JdkReleaseLayout {
-    private final ProjectLayout projectLayout;
+    private final BaseLayout baseLayout;
 
+    @SneakyThrows
     @Override
-    public Path getReleaseDirectory() {
-        return projectLayout.findProjectRoot(true)
-            .orElseThrow(() -> new IllegalStateException("Project root not found"))
-            .resolve("releases");
+    public Path ensureReleaseDirectory() {
+        return Files.createDirectories(
+            baseLayout.baseDirectory(true)
+                .resolve("releases"));
     }
 }

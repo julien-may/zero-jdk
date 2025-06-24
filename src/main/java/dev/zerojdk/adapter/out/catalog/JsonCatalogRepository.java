@@ -8,8 +8,8 @@ import dev.zerojdk.adapter.out.catalog.provider.CatalogStorageProvider;
 import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
-import dev.zerojdk.utils.OperatingSystem;
-import dev.zerojdk.utils.ProcessorArchitecture;
+import dev.zerojdk.domain.model.OperatingSystem;
+import dev.zerojdk.domain.model.ProcessorArchitecture;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 

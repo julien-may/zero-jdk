@@ -1,7 +1,8 @@
 package dev.zerojdk.adapter.in.cli;
 
 import dev.zerojdk.domain.model.Platform;
-import dev.zerojdk.domain.service.ConfigService;
+import dev.zerojdk.domain.port.out.PlatformDetection;
+import dev.zerojdk.domain.service.JdkConfigService;
 import dev.zerojdk.domain.service.ManifestSyncService;
 import lombok.RequiredArgsConstructor;
 import picocli.CommandLine;
@@ -9,7 +10,8 @@ import picocli.CommandLine;
 @RequiredArgsConstructor
 @CommandLine.Command(header = "Create a manifest in the current or global directory")
 public class ZjdkInit implements Runnable {
-    private final ConfigService configService;
+    private final PlatformDetection platformDetection;
+    private final JdkConfigService jdkConfigService;
     private final ManifestSyncService manifestSyncService;
 
     @CommandLine.Option(names = {"--version"}, description = "Initialize with this JDK version")
@@ -20,12 +22,12 @@ public class ZjdkInit implements Runnable {
 
     @Override
     public void run() {
-        System.out.print("Initializing ZJDK... ");
+        System.out.print("Initializing... ");
 
-        Platform platform = Platform.detect();
+        Platform platform = platformDetection.detect();
 
         try {
-            configService.createConfiguration(platform, version, global);
+            jdkConfigService.createConfiguration(platform, version, global);
             manifestSyncService.sync(platform, global);
 
             System.out.println("done");

@@ -1,7 +1,8 @@
 package dev.zerojdk.adapter.in.cli;
 
 import dev.zerojdk.domain.model.Platform;
-import dev.zerojdk.domain.service.ConfigService;
+import dev.zerojdk.domain.port.out.PlatformDetection;
+import dev.zerojdk.domain.service.JdkConfigService;
 import dev.zerojdk.domain.service.ManifestSyncService;
 import lombok.RequiredArgsConstructor;
 import picocli.CommandLine;
@@ -11,7 +12,8 @@ public class ZjdkSet {
     @RequiredArgsConstructor
     @CommandLine.Command(header = "Version to change")
     public static class Version implements Runnable {
-        private final ConfigService configService;
+        private final PlatformDetection platformDetection;
+        private final JdkConfigService jdkConfigService;
         private final ManifestSyncService manifestSyncService;
 
         @CommandLine.Option(names = {"--global"}, description = "Set globally")
@@ -22,9 +24,9 @@ public class ZjdkSet {
 
         @Override
         public void run() {
-            Platform platform = Platform.detect();
+            Platform platform = platformDetection.detect();
 
-            configService.updateConfiguration(platform, version, global);
+            jdkConfigService.updateConfiguration(platform, version, global);
             manifestSyncService.sync(platform, global);
         }
     }

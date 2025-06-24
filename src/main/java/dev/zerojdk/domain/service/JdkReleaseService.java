@@ -7,12 +7,11 @@ import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.port.out.index.RegistrationRepository;
 import dev.zerojdk.domain.port.out.release.JdkInstaller;
 import dev.zerojdk.domain.port.out.release.JdkReleaseLayout;
-import dev.zerojdk.infrastructure.unarchiver.UnarchiverFactory;
+import dev.zerojdk.domain.port.out.unarchiving.UnarchiverFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -34,16 +33,10 @@ public class JdkReleaseService {
         File downloadedFile = downloadService.download(version.getIndirectDownloadUri());
 
         Path extracted = unarchiverFactory.create(downloadedFile)
-            .extract(resolveReleaseDirectoryFor(version.getIdentifier()));
+            .extract(jdkReleaseLayout.ensureReleaseDirectory()
+                .resolve(version.getIdentifier()));
 
         jdkInstaller.install(version, extracted);
-    }
-
-    @SneakyThrows
-    private Path resolveReleaseDirectoryFor(String version) {
-        // TODO: creating directories here might not be very clean
-        return Files.createDirectories(jdkReleaseLayout.getReleaseDirectory())
-            .resolve(version);
     }
 
     public Optional<JdkRelease> findJdkRelease(Platform platform, String identifier) {

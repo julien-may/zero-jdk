@@ -1,4 +1,4 @@
-package dev.zerojdk.infrastructure.unarchiver;
+package dev.zerojdk.domain.port.out.unarchiving;
 
 import java.nio.file.Path;
 

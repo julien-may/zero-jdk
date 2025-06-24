@@ -2,6 +2,8 @@ package dev.zerojdk.adapter.out.index;
 
 import dev.zerojdk.domain.model.InstallationRecord;
 import dev.zerojdk.domain.port.out.index.RegistrationRepository;
+import dev.zerojdk.domain.port.out.release.JdkReleaseLayout;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
 import java.io.File;
@@ -11,9 +13,9 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Properties;
 
+@RequiredArgsConstructor
 public class FsRegistrationRepository implements RegistrationRepository {
-    private static final File ZJDK_FOLDER = new File(System.getProperty("user.home"), ".zjdk");
-    private static final File RELEASES_FOLDER = new File(ZJDK_FOLDER, "releases");
+    private final JdkReleaseLayout jdkReleaseLayout;
 
     @SneakyThrows
     @Override
@@ -35,7 +37,7 @@ public class FsRegistrationRepository implements RegistrationRepository {
     @SneakyThrows
     @Override
     public Optional<InstallationRecord> find(String identifier) {
-        Path release = RELEASES_FOLDER.toPath()
+        Path release = jdkReleaseLayout.ensureReleaseDirectory()
             .resolve(identifier);
 
         File info = release

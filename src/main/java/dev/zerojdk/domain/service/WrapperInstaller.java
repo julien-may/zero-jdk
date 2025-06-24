@@ -21,6 +21,9 @@ public class WrapperInstaller {
             .orElseGet(() -> wrapperConfigRepository.write(
                 new WrapperConfig(wrapperReleaseLocator.findLatestUrl(platform))));
 
+        // TODO: instead of only creating the script we should also copy the version of zjdk that is currently
+        //  being executed into the directory
+
         wrapperScriptRepository.save(
             wrapperScriptGenerator.generateScript(wrapperConfig.url()));
     }

@@ -1,39 +1,41 @@
 package dev.zerojdk.adapter.out.wrapper;
 
-import dev.zerojdk.domain.port.out.ProjectLayout;
+import dev.zerojdk.domain.port.out.BaseLayout;
 import dev.zerojdk.domain.port.out.wrapper.WrapperLayout;
-import dev.zerojdk.domain.service.ConfigurationNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 @RequiredArgsConstructor
 public class FsWrapperLayout implements WrapperLayout {
-    private final ProjectLayout projectLayout;
+    private final BaseLayout baseLayout;
 
+    @SneakyThrows
     @Override
-    public Path wrapperDirectory() {
-        return projectLayout.findProjectRoot(false)
-            .orElseThrow(ConfigurationNotFoundException::new)
-            .resolve(".zjdk/wrapper");
+    public Path ensureWrapperDirectory() {
+        return Files.createDirectories(baseLayout.baseDirectory(false)
+            .resolve("wrapper"));
     }
 
     @Override
     public Path binaryPath() {
-        return wrapperDirectory()
+        return ensureWrapperDirectory()
             .resolve("zjdk");
     }
 
     @Override
     public Path configPath() {
-        return wrapperDirectory()
+        return ensureWrapperDirectory()
             .resolve("zjdk-wrapper.properties");
     }
 
     @Override
     public Path scriptPath() {
-        return projectLayout.findProjectRoot(false)
-            .orElseThrow(ConfigurationNotFoundException::new)
+        return baseLayout.discoverProjectRoot()
+            // TODO: concrete exception
+            .orElseThrow(RuntimeException::new)
             .resolve("zjdkw");
     }
 }

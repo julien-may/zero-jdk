@@ -1,12 +1,14 @@
-package dev.zerojdk.domain.service;
+package dev.zerojdk.adapter.out.catalog;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import dev.zerojdk.domain.model.Catalog;
+import dev.zerojdk.domain.port.out.catalog.CatalogDownloadService;
 import dev.zerojdk.domain.port.out.download.DownloadService;
-import dev.zerojdk.infrastructure.unarchiver.Unarchiver;
-import dev.zerojdk.infrastructure.unarchiver.UnarchiverFactory;
+import dev.zerojdk.domain.port.out.unarchiving.Unarchiver;
+import dev.zerojdk.domain.port.out.unarchiving.UnarchiverFactory;
+import dev.zerojdk.domain.service.CatalogUnchangedException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
@@ -29,7 +31,12 @@ public class HttpCatalogDownloadService implements CatalogDownloadService {
 
     private static final String REPO = "julien-may/zero-jdk-catalog";
 
-    @SneakyThrows
+    @Override
+    public Catalog downloadLatest() {
+        Release latestRelease = fetchLatestReleaseInfo();
+        return download(latestRelease);
+    }
+
     @Override
     public Catalog downloadLatestIfNewer(String currentVersion) {
         Release latestRelease = fetchLatestReleaseInfo();
@@ -39,11 +46,15 @@ public class HttpCatalogDownloadService implements CatalogDownloadService {
             throw new CatalogUnchangedException("Catalog is already up-to-date");
         }
 
+        return download(latestRelease);
+    }
+
+    @SneakyThrows
+    private Catalog download(Release latestRelease) {
         String url = latestRelease.assets().stream()
             .map(Asset::browserDownloadUrl)
             .findFirst()
             .orElse(null);
-
 
         File downloaded = downloadService.download(url);
         Unarchiver unarchiver = unarchiverFactory.create(downloaded);
@@ -51,9 +62,10 @@ public class HttpCatalogDownloadService implements CatalogDownloadService {
         Path tempExtractDir = Files.createTempDirectory("catalog-extract-");
         Path extracted = unarchiver.extract(tempExtractDir);
 
-        return new Catalog(version, extracted);
+        return new Catalog(latestRelease.tagName, extracted);
     }
 
+    // TODO: extract into GitHubReleaseClient
     @SneakyThrows
     private Release fetchLatestReleaseInfo() {
         HttpRequest request = HttpRequest.newBuilder()

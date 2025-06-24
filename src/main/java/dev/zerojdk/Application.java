@@ -9,28 +9,40 @@ import dev.zerojdk.adapter.in.cli.ZjdkShell;
 import dev.zerojdk.adapter.in.cli.ZjdkSync;
 import dev.zerojdk.adapter.in.cli.ZjdkWrapper;
 
-import dev.zerojdk.adapter.out.FsProjectLayout;
-import dev.zerojdk.adapter.out.catalog.FsCatalogMetadataRepository;
+import dev.zerojdk.adapter.out.FsBaseLayout;
+import dev.zerojdk.adapter.out.SystemPropertyBasedPlatformDetection;
+import dev.zerojdk.adapter.out.UnmanagedDirectoryException;
+import dev.zerojdk.adapter.out.catalog.FsCatalogStorageLayout;
+import dev.zerojdk.adapter.out.catalog.FsCatalogStorageMetadataRepository;
+import dev.zerojdk.adapter.out.catalog.HttpCatalogDownloadService;
 import dev.zerojdk.adapter.out.catalog.JsonCatalogRepository;
 import dev.zerojdk.adapter.out.catalog.provider.CatalogStorageProvider;
 import dev.zerojdk.adapter.out.catalog.provider.JsonCatalogStorageProvider;
-import dev.zerojdk.adapter.out.config.FsConfigRepository;
+import dev.zerojdk.adapter.out.config.FsJdkConfigRepository;
 import dev.zerojdk.adapter.out.download.HttpDownloadService;
 import dev.zerojdk.adapter.out.index.FsRegistrationRepository;
 import dev.zerojdk.adapter.out.release.FsJdkInstaller;
 import dev.zerojdk.adapter.out.release.FsJdkReleaseLayout;
+import dev.zerojdk.adapter.out.shell.FsShellExtensionLayout;
+import dev.zerojdk.adapter.out.shell.FsShellExtensionStorage;
 import dev.zerojdk.adapter.out.wrapper.*;
-import dev.zerojdk.domain.port.out.ProjectLayout;
-import dev.zerojdk.domain.port.out.catalog.CatalogMetadataRepository;
+import dev.zerojdk.domain.port.out.PlatformDetection;
+import dev.zerojdk.domain.port.out.BaseLayout;
+import dev.zerojdk.domain.port.out.catalog.CatalogDownloadService;
+import dev.zerojdk.domain.port.out.catalog.CatalogStorageLayout;
+import dev.zerojdk.domain.port.out.catalog.CatalogStorageMetadataRepository;
 import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
-import dev.zerojdk.domain.port.out.config.ConfigRepository;
+import dev.zerojdk.domain.port.out.config.JdkConfigRepository;
 import dev.zerojdk.domain.port.out.download.DownloadService;
 import dev.zerojdk.domain.port.out.index.RegistrationRepository;
 import dev.zerojdk.domain.port.out.release.JdkInstaller;
 import dev.zerojdk.domain.port.out.release.JdkReleaseLayout;
+import dev.zerojdk.domain.port.out.shell.ShellExtensionLayout;
+import dev.zerojdk.domain.port.out.shell.ShellExtensionStorage;
 import dev.zerojdk.domain.port.out.wrapper.*;
 import dev.zerojdk.domain.service.*;
-import dev.zerojdk.infrastructure.unarchiver.UnarchiverFactory;
+import dev.zerojdk.adapter.out.unarchiver.DetectingUnarchiverFactory;
+import dev.zerojdk.infrastructure.VersionProvider;
 import picocli.CommandLine;
 
 import java.util.LinkedHashMap;
@@ -40,57 +52,74 @@ import java.util.Map;
 import static picocli.CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIST;
 import static picocli.CommandLine.Model.UsageMessageSpec.SECTION_KEY_COMMAND_LIST_HEADING;
 
-@CommandLine.Command(name = "zjdk" , mixinStandardHelpOptions = true, footer = "%nSee 'zjdk help <command>' to read about a specific subcommand", commandListHeading = "%nCommands:%n")
+@CommandLine.Command(name = "zjdk" ,
+    mixinStandardHelpOptions = true,
+    versionProvider = VersionProvider.class,
+    footer = "%nSee 'zjdk help <command>' to read about a specific subcommand",
+    commandListHeading = "%nCommands:%n")
 public class Application implements Runnable {
     @CommandLine.Spec
     private CommandLine.Model.CommandSpec spec;
 
     public static void main(String[] args) {
-        // Infra setup
-        ProjectLayout projectLayout = new FsProjectLayout();
+        // Common
+        PlatformDetection platformDetection = new SystemPropertyBasedPlatformDetection();
+        BaseLayout baseLayout = new FsBaseLayout();
         DownloadService downloadService = new HttpDownloadService();
-        UnarchiverFactory unarchiverFactory = new UnarchiverFactory();
+        DetectingUnarchiverFactory unarchiverFactory = new DetectingUnarchiverFactory();
 
-        // Catalog setup
-        CatalogMetadataRepository catalogMetadataRepository = new FsCatalogMetadataRepository();
+
+        // Catalog Storage setup
+        CatalogStorageLayout catalogStorageLayout = new FsCatalogStorageLayout(baseLayout);
+        CatalogStorageMetadataRepository catalogStorageMetadataRepository = new FsCatalogStorageMetadataRepository(catalogStorageLayout);
         CatalogDownloadService catalogDownloadService = new HttpCatalogDownloadService(downloadService, unarchiverFactory);
-        CatalogStorageProvider catalogStorageProvider = new JsonCatalogStorageProvider(catalogDownloadService, catalogMetadataRepository);
+        CatalogStorageService catalogStorageService = new CatalogStorageService(catalogDownloadService, catalogStorageMetadataRepository);
+        CatalogStorageProvider catalogStorageProvider = new JsonCatalogStorageProvider(catalogStorageService);
+
+        // Catalog
         CatalogRepository catalogRepository = new JsonCatalogRepository(catalogStorageProvider);
         CatalogService catalogService = new CatalogService(catalogRepository);
 
-        // Config and JDK services
-        ConfigRepository configRepository = new FsConfigRepository(projectLayout);
-        ConfigService configService = new ConfigService(configRepository, catalogService);
+        // JDK Config
+        JdkConfigRepository jdkConfigRepository = new FsJdkConfigRepository(baseLayout);
+        JdkConfigService jdkConfigService = new JdkConfigService(jdkConfigRepository, catalogService);
 
         // Jdk Release
-        JdkReleaseLayout jdkReleaseLayout = new FsJdkReleaseLayout(projectLayout);
-        RegistrationRepository registrationRepository = new FsRegistrationRepository();
+        JdkReleaseLayout jdkReleaseLayout = new FsJdkReleaseLayout(baseLayout);
+        RegistrationRepository registrationRepository = new FsRegistrationRepository(jdkReleaseLayout);
         JdkInstaller jdkInstaller = new FsJdkInstaller(registrationRepository);
         JdkReleaseService jdkReleaseService = new JdkReleaseService(jdkReleaseLayout, downloadService, unarchiverFactory, catalogService, registrationRepository, jdkInstaller);
 
         // Sync aggregation
-        ManifestSyncService manifestSyncService = new ManifestSyncService(catalogService, configService, jdkReleaseService);
+        ManifestSyncService manifestSyncService = new ManifestSyncService(catalogService, jdkConfigService, jdkReleaseService);
 
         // Wrapper
-        WrapperLayout wrapperLayout = new FsWrapperLayout(projectLayout);
+        WrapperLayout wrapperLayout = new FsWrapperLayout(baseLayout);
         WrapperConfigRepository wrapperConfigRepository = new FsWrapperConfigRepository(wrapperLayout);
         WrapperScriptRepository wrapperScriptRepository = new FsWrapperScriptRepository(wrapperLayout);
         WrapperReleaseLocator wrapperReleaseLocator = new WrapperReleaseLocatorAdapter();
-        WrapperScriptGenerator wrapperScriptGenerator = new WrapperScriptGenerator(wrapperLayout);
+        WrapperScriptGenerator wrapperScriptGenerator = new WrapperScriptGenerator(baseLayout, wrapperLayout);
         WrapperInstaller wrapperInstaller = new WrapperInstaller(wrapperConfigRepository, wrapperScriptRepository, wrapperReleaseLocator, wrapperScriptGenerator);
+
+        // Shell Extensions
+        ShellExtensionLayout shellExtensionLayout = new FsShellExtensionLayout(baseLayout);
+        ShellExtensionStorage shellExtensionStorage = new FsShellExtensionStorage(shellExtensionLayout);
+        ShellExtensionWriter shellExtensionWriter = new ShellExtensionWriter(shellExtensionStorage);
 
         // CLI setup
         CommandLine commandLine = new CommandLine(new Application())
-            .addSubcommand("init", new ZjdkInit(configService, manifestSyncService))
-            .addSubcommand("sync", new ZjdkSync(manifestSyncService))
-            .addSubcommand("wrapper", new ZjdkWrapper(wrapperInstaller))
+            .addSubcommand("init", new ZjdkInit(platformDetection, jdkConfigService, manifestSyncService))
+            .addSubcommand("sync", new ZjdkSync(platformDetection, manifestSyncService))
+            .addSubcommand("wrapper", new ZjdkWrapper(platformDetection, wrapperInstaller))
             .addSubcommand("set", new CommandLine(new ZjdkSet())
-                .addSubcommand("version", new ZjdkSet.Version(configService, manifestSyncService)))
-            .addSubcommand("env", new ZjdkEnv(configService, jdkReleaseService))
+                .addSubcommand("version", new ZjdkSet.Version(platformDetection, jdkConfigService, manifestSyncService)))
+            .addSubcommand("env", new ZjdkEnv(platformDetection, jdkConfigService, jdkReleaseService))
             .addSubcommand("list", new CommandLine(new ZjdkList())
-                .addSubcommand("available", new ZjdkList.Available(catalogService)))
-            .addSubcommand("shell", new ZjdkShell())
-            .addSubcommand("update", new ZjdkUpdate(catalogMetadataRepository, catalogDownloadService))
+                .addSubcommand("available", new ZjdkList.Available(platformDetection, catalogService)))
+            .addSubcommand("shell", new CommandLine(new ZjdkShell())
+                .addSubcommand("install", new CommandLine(new ZjdkShell.Install())
+                    .addSubcommand("zsh", new ZjdkShell.Install.Zsh(shellExtensionWriter))))
+            .addSubcommand("update", new ZjdkUpdate(catalogStorageService))
             .addSubcommand(new CommandLine.HelpCommand())
             .setExecutionExceptionHandler(new ExecutionExceptionHandler());
 
@@ -117,10 +146,10 @@ public class Application implements Runnable {
 
         @Override
         public int handleExecutionException(Exception ex, CommandLine commandLine, CommandLine.ParseResult fullParseResult) {
-            if (ex instanceof ConfigurationNotFoundException) {
-                System.err.println("zjdk not configured. Try zjdk init...");
-            } else if (ex instanceof UnsupportedIdentifierException e) {
-                System.err.printf("The defined version %s is not supported", e.getIdentifier());
+            if (ex instanceof UnsupportedIdentifierException e) {
+                System.err.printf("The defined version %s is not supported\n", e.getIdentifier());
+            } else if (ex instanceof UnmanagedDirectoryException) {
+                System.err.println("Not a zero-jdk managed directory (or any of the parent directories): .zjdk");
             } else {
                 System.err.println(ex.getMessage());
             }

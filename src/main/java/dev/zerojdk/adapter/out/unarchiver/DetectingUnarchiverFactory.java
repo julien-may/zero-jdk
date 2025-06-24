@@ -1,11 +1,14 @@
-package dev.zerojdk.infrastructure.unarchiver;
+package dev.zerojdk.adapter.out.unarchiver;
 
-import dev.zerojdk.infrastructure.unarchiver.compression.GzipCompression;
-import dev.zerojdk.infrastructure.unarchiver.compression.NoCompression;
+import dev.zerojdk.domain.port.out.unarchiving.Unarchiver;
+import dev.zerojdk.domain.port.out.unarchiving.UnarchiverFactory;
+import dev.zerojdk.adapter.out.unarchiver.compression.GzipCompression;
+import dev.zerojdk.adapter.out.unarchiver.compression.NoCompression;
 
 import java.io.File;
 
-public class UnarchiverFactory {
+public class DetectingUnarchiverFactory implements UnarchiverFactory {
+    @Override
     public Unarchiver create(File archive) {
         String name = archive.getName().toLowerCase();
         if (name.endsWith(".tar.gz") || name.endsWith(".tgz")) {

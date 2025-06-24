@@ -8,5 +8,17 @@
   {
     "name": "java.lang.Runtime$Version",
     "allPublicConstructors": true
+  },
+  {
+    "name": "dev.zerojdk.adapter.out.catalog.HttpCatalogDownloadService$Release",
+    "allPublicConstructors": true,
+    "allPublicMethods": true,
+    "allPublicFields": true
+  },
+  {
+    "name": "dev.zerojdk.adapter.out.catalog.HttpCatalogDownloadService$Asset",
+    "allPublicConstructors": true,
+    "allPublicMethods": true,
+    "allPublicFields": true
   }
 ]

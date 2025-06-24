@@ -13,10 +13,6 @@ import java.util.Optional;
 public class CatalogService {
     private final CatalogRepository catalogRepository;
 
-    public Map<String, List<JdkVersion>> findAll(Platform platform) {
-        return catalogRepository.findAll(platform);
-    }
-
     public List<JdkVersion> findAllByDistribution(Platform platform, String distribution) {
         return catalogRepository.findAllByDistribution(platform, distribution);
     }

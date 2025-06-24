@@ -1,4 +1,4 @@
-package dev.zerojdk.infrastructure.unarchiver.compression;
+package dev.zerojdk.domain.port.out.unarchiving.compression;
 
 import java.io.InputStream;
 

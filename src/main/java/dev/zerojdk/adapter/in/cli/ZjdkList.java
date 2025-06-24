@@ -2,6 +2,7 @@ package dev.zerojdk.adapter.in.cli;
 
 import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.model.Platform;
+import dev.zerojdk.domain.port.out.PlatformDetection;
 import dev.zerojdk.domain.service.CatalogService;
 import lombok.RequiredArgsConstructor;
 import picocli.CommandLine;
@@ -22,8 +23,9 @@ public class ZjdkList {
     }
 
     @RequiredArgsConstructor
-    @CommandLine.Command(name = "available", header = "Show available JDKs")
+    @CommandLine.Command(header = "Show available JDKs")
     public static class Available implements Runnable {
+        private final PlatformDetection platformDetection;
         private final CatalogService catalogService;
 
         @CommandLine.Option(names = {"--dist"}, description = "The distribution")
@@ -33,7 +35,7 @@ public class ZjdkList {
 
         @Override
         public void run() {
-            Platform platform = Platform.detect();
+            Platform platform = platformDetection.detect();
 
             if (distribution == null) {
                 Map<String, List<JdkVersion>> latest = catalogService.findLatest(platform);

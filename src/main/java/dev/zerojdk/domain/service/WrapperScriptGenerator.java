@@ -1,5 +1,6 @@
 package dev.zerojdk.domain.service;
 
+import dev.zerojdk.domain.port.out.BaseLayout;
 import dev.zerojdk.domain.port.out.wrapper.WrapperLayout;
 import lombok.RequiredArgsConstructor;
 
@@ -7,6 +8,7 @@ import java.nio.file.Path;
 
 @RequiredArgsConstructor
 public class WrapperScriptGenerator {
+    private final BaseLayout baseLayout;
     private final WrapperLayout wrapperLayout;
 
     public String generateScript(String downloadUrl) {
@@ -14,7 +16,7 @@ public class WrapperScriptGenerator {
 
         return """
             #!/usr/bin/env sh
-            set -euo pipefail
+            set -eu
 
             WRAPPER_DIR="$(cd "$(dirname "$0")/%s" && pwd)"
             BIN="$WRAPPER_DIR/%s"
@@ -54,7 +56,10 @@ public class WrapperScriptGenerator {
 
             exec "$BIN" "$@"
             """.formatted(
-                    binPath.getParent(),
+                    baseLayout.discoverProjectRoot()
+                        .map(root -> root.relativize(wrapperLayout.ensureWrapperDirectory()))
+                        // TODO: concrete Exception
+                        .orElseThrow(),
                     binPath.getFileName().toString(),
                     wrapperLayout.configPath().getFileName(),
                     downloadUrl);
