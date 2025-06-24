@@ -9,7 +9,7 @@ import dev.zerojdk.domain.port.out.index.RegistrationRepository;
 import dev.zerojdk.domain.port.out.release.JdkInstaller;
 import dev.zerojdk.domain.port.out.release.JdkReleaseLayout;
 import dev.zerojdk.domain.port.out.unarchiving.UnarchiverFactory;
-import dev.zerojdk.domain.service.CatalogService;
+import dev.zerojdk.domain.service.catalog.CatalogService;
 import dev.zerojdk.domain.service.release.events.JdkDownloadCompleted;
 import dev.zerojdk.domain.service.release.events.JdkDownloadProgress;
 import dev.zerojdk.domain.service.release.events.JdkDownloadStarted;

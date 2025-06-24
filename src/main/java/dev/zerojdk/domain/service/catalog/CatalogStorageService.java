@@ -1,4 +1,4 @@
-package dev.zerojdk.domain.service;
+package dev.zerojdk.domain.service.catalog;
 
 import dev.zerojdk.domain.model.Catalog;
 import dev.zerojdk.domain.port.out.catalog.CatalogDownloadService;

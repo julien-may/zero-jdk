@@ -1,4 +1,4 @@
-package dev.zerojdk.domain.service;
+package dev.zerojdk.domain.service.wrapper;
 
 import dev.zerojdk.domain.port.out.BaseLayout;
 import dev.zerojdk.domain.port.out.wrapper.WrapperLayout;

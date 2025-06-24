@@ -1,7 +1,8 @@
-package dev.zerojdk.domain.service;
+package dev.zerojdk.domain.service.config;
 
 import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.port.out.config.JdkConfigRepository;
+import dev.zerojdk.domain.service.catalog.CatalogService;
 import lombok.RequiredArgsConstructor;
 
 import dev.zerojdk.domain.model.Platform;

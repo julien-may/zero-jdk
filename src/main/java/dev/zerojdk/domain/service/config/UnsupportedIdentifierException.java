@@ -1,4 +1,4 @@
-package dev.zerojdk.domain.service;
+package dev.zerojdk.domain.service.config;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

@@ -41,9 +41,16 @@ import dev.zerojdk.domain.port.out.release.JdkReleaseLayout;
 import dev.zerojdk.domain.port.out.shell.ShellExtensionLayout;
 import dev.zerojdk.domain.port.out.shell.ShellExtensionStorage;
 import dev.zerojdk.domain.port.out.wrapper.*;
-import dev.zerojdk.domain.service.*;
 import dev.zerojdk.adapter.out.unarchiver.DetectingUnarchiverFactory;
+import dev.zerojdk.domain.service.catalog.CatalogService;
+import dev.zerojdk.domain.service.catalog.CatalogStorageService;
+import dev.zerojdk.domain.service.config.JdkConfigService;
+import dev.zerojdk.domain.service.config.UnsupportedIdentifierException;
 import dev.zerojdk.domain.service.release.JdkReleaseService;
+import dev.zerojdk.domain.service.shell.ShellExtensionWriter;
+import dev.zerojdk.domain.service.sync.ManifestSyncService;
+import dev.zerojdk.domain.service.wrapper.WrapperInstaller;
+import dev.zerojdk.domain.service.wrapper.WrapperScriptGenerator;
 import dev.zerojdk.infrastructure.VersionProvider;
 import picocli.CommandLine;
 

@@ -1,6 +1,9 @@
-package dev.zerojdk.domain.service;
+package dev.zerojdk.domain.service.sync;
 
 import dev.zerojdk.domain.model.JdkVersion;
+import dev.zerojdk.domain.service.config.JdkConfigService;
+import dev.zerojdk.domain.service.config.UnsupportedIdentifierException;
+import dev.zerojdk.domain.service.catalog.CatalogService;
 import dev.zerojdk.domain.service.release.JdkReleaseService;
 import lombok.RequiredArgsConstructor;
 

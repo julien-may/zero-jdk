@@ -3,7 +3,7 @@ package dev.zerojdk.adapter.in.cli;
 import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.port.out.PlatformDetection;
-import dev.zerojdk.domain.service.CatalogService;
+import dev.zerojdk.domain.service.catalog.CatalogService;
 import lombok.RequiredArgsConstructor;
 import picocli.CommandLine;
 

@@ -8,7 +8,7 @@ import dev.zerojdk.domain.port.out.catalog.CatalogDownloadService;
 import dev.zerojdk.domain.port.out.download.DownloadService;
 import dev.zerojdk.domain.port.out.unarchiving.Unarchiver;
 import dev.zerojdk.domain.port.out.unarchiving.UnarchiverFactory;
-import dev.zerojdk.domain.service.CatalogUnchangedException;
+import dev.zerojdk.domain.service.catalog.CatalogUnchangedException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 

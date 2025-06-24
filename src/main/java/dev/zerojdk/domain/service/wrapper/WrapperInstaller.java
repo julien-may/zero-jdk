@@ -1,4 +1,4 @@
-package dev.zerojdk.domain.service;
+package dev.zerojdk.domain.service.wrapper;
 
 import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.model.WrapperConfig;

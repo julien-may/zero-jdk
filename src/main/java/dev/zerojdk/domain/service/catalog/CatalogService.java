@@ -1,4 +1,4 @@
-package dev.zerojdk.domain.service;
+package dev.zerojdk.domain.service.catalog;
 
 import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.model.Platform;

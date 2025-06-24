@@ -1,6 +1,6 @@
 package dev.zerojdk.adapter.in.cli;
 
-import dev.zerojdk.domain.service.ShellExtensionWriter;
+import dev.zerojdk.domain.service.shell.ShellExtensionWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import picocli.CommandLine;

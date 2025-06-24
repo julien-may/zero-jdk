@@ -1,7 +1,7 @@
 package dev.zerojdk.adapter.in.cli;
 
 import dev.zerojdk.domain.port.out.PlatformDetection;
-import dev.zerojdk.domain.service.WrapperInstaller;
+import dev.zerojdk.domain.service.wrapper.WrapperInstaller;
 import lombok.RequiredArgsConstructor;
 import picocli.CommandLine;
 

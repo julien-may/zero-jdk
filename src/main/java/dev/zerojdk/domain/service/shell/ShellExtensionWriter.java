@@ -1,6 +1,5 @@
-package dev.zerojdk.domain.service;
+package dev.zerojdk.domain.service.shell;
 
-import dev.zerojdk.domain.port.out.shell.ShellExtensionLayout;
 import dev.zerojdk.domain.port.out.shell.ShellExtensionStorage;
 import lombok.RequiredArgsConstructor;
 

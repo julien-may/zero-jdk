@@ -1,7 +1,7 @@
 package dev.zerojdk.adapter.in.cli;
 
-import dev.zerojdk.domain.service.CatalogStorageService;
-import dev.zerojdk.domain.service.CatalogUnchangedException;
+import dev.zerojdk.domain.service.catalog.CatalogStorageService;
+import dev.zerojdk.domain.service.catalog.CatalogUnchangedException;
 import picocli.CommandLine;
 import lombok.RequiredArgsConstructor;
 

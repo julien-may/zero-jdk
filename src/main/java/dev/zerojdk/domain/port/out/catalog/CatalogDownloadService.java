@@ -1,7 +1,7 @@
 package dev.zerojdk.domain.port.out.catalog;
 
 import dev.zerojdk.domain.model.Catalog;
-import dev.zerojdk.domain.service.CatalogUnchangedException;
+import dev.zerojdk.domain.service.catalog.CatalogUnchangedException;
 
 public interface CatalogDownloadService {
     Catalog downloadLatest() throws CatalogUnchangedException;
