@@ -51,13 +51,22 @@ public class HttpDownloadService implements DownloadService {
                 long bytesRead = 0;
                 int len;
 
+                long percentage;
+                long prevPercentage = -1;
                 while ((len = in.read(buffer)) != -1) {
                     out.write(buffer, 0, len);
                     bytesRead += len;
 
+                    percentage = bytesRead * 100 / totalBytes;
+
                     if (progressListener != null) {
-                        progressListener.onProgress(bytesRead, totalBytes);
+                        // Throttle
+                        if (prevPercentage == -1 || percentage > prevPercentage) {
+                            progressListener.onProgress(bytesRead, totalBytes);
+                        }
                     }
+
+                    prevPercentage = percentage;
                 }
             }
 
