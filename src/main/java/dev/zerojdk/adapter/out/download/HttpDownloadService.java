@@ -14,9 +14,13 @@ import java.nio.file.*;
 import java.util.*;
 
 public class HttpDownloadService implements DownloadService {
+    public File download(String uri) {
+        return download(uri, null);
+    }
+
     @SneakyThrows
     @Override
-    public File download(String uri) {
+    public File download(String uri, ProgressListener progressListener) {
         HttpRequest httpRequest = HttpRequest
             .newBuilder(URI.create(uri))
             .build();
@@ -27,9 +31,12 @@ public class HttpDownloadService implements DownloadService {
         Path tmp = Files.createTempFile("dl-", ".part");
 
         try (HttpClient httpClient = httpClientBuilder.build()) {
-            HttpResponse<Path> response = httpClient.send(
-                httpRequest,
-                HttpResponse.BodyHandlers.ofFile(tmp, StandardOpenOption.WRITE));
+            HttpResponse<InputStream> response = httpClient.send(
+                httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+            long totalBytes = response.headers()
+                .firstValueAsLong("Content-Length")
+                .orElse(-1);
 
             String fileName = response.headers()
                 .firstValue("Content-Disposition")
@@ -37,8 +44,24 @@ public class HttpDownloadService implements DownloadService {
                 .orElseGet(() -> Paths.get(response.uri().getPath())
                     .getFileName().toString());
 
-            Path target = tmp.getParent().resolve(fileName);
+            try (InputStream in = response.body();
+                 OutputStream out = Files.newOutputStream(tmp, StandardOpenOption.WRITE)) {
 
+                byte[] buffer = new byte[8192];
+                long bytesRead = 0;
+                int len;
+
+                while ((len = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, len);
+                    bytesRead += len;
+
+                    if (progressListener != null) {
+                        progressListener.onProgress(bytesRead, totalBytes);
+                    }
+                }
+            }
+
+            Path target = tmp.getParent().resolve(fileName);
             Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
 
             return target.toFile();

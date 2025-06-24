@@ -20,6 +20,7 @@ import dev.zerojdk.adapter.out.catalog.provider.CatalogStorageProvider;
 import dev.zerojdk.adapter.out.catalog.provider.JsonCatalogStorageProvider;
 import dev.zerojdk.adapter.out.config.FsJdkConfigRepository;
 import dev.zerojdk.adapter.out.download.HttpDownloadService;
+import dev.zerojdk.adapter.out.event.InMemoryDomainEventPublisher;
 import dev.zerojdk.adapter.out.index.FsRegistrationRepository;
 import dev.zerojdk.adapter.out.release.FsJdkInstaller;
 import dev.zerojdk.adapter.out.release.FsJdkReleaseLayout;
@@ -42,6 +43,7 @@ import dev.zerojdk.domain.port.out.shell.ShellExtensionStorage;
 import dev.zerojdk.domain.port.out.wrapper.*;
 import dev.zerojdk.domain.service.*;
 import dev.zerojdk.adapter.out.unarchiver.DetectingUnarchiverFactory;
+import dev.zerojdk.domain.service.release.JdkReleaseService;
 import dev.zerojdk.infrastructure.VersionProvider;
 import picocli.CommandLine;
 
@@ -68,6 +70,8 @@ public class Application implements Runnable {
         DownloadService downloadService = new HttpDownloadService();
         DetectingUnarchiverFactory unarchiverFactory = new DetectingUnarchiverFactory();
 
+        // Event Management
+        InMemoryDomainEventPublisher domainEventPublisher = new InMemoryDomainEventPublisher();
 
         // Catalog Storage setup
         CatalogStorageLayout catalogStorageLayout = new FsCatalogStorageLayout(baseLayout);
@@ -88,7 +92,8 @@ public class Application implements Runnable {
         JdkReleaseLayout jdkReleaseLayout = new FsJdkReleaseLayout(baseLayout);
         RegistrationRepository registrationRepository = new FsRegistrationRepository(jdkReleaseLayout);
         JdkInstaller jdkInstaller = new FsJdkInstaller(registrationRepository);
-        JdkReleaseService jdkReleaseService = new JdkReleaseService(jdkReleaseLayout, downloadService, unarchiverFactory, catalogService, registrationRepository, jdkInstaller);
+        JdkReleaseService jdkReleaseService = new JdkReleaseService(domainEventPublisher, jdkReleaseLayout, downloadService,
+            unarchiverFactory, catalogService, registrationRepository, jdkInstaller);
 
         // Sync aggregation
         ManifestSyncService manifestSyncService = new ManifestSyncService(catalogService, jdkConfigService, jdkReleaseService);
@@ -108,11 +113,11 @@ public class Application implements Runnable {
 
         // CLI setup
         CommandLine commandLine = new CommandLine(new Application())
-            .addSubcommand("init", new ZjdkInit(platformDetection, jdkConfigService, manifestSyncService))
-            .addSubcommand("sync", new ZjdkSync(platformDetection, manifestSyncService))
+            .addSubcommand("init", new ZjdkInit(platformDetection, jdkConfigService, manifestSyncService, domainEventPublisher))
+            .addSubcommand("sync", new ZjdkSync(platformDetection, manifestSyncService, domainEventPublisher))
             .addSubcommand("wrapper", new ZjdkWrapper(platformDetection, wrapperInstaller))
             .addSubcommand("set", new CommandLine(new ZjdkSet())
-                .addSubcommand("version", new ZjdkSet.Version(platformDetection, jdkConfigService, manifestSyncService)))
+                .addSubcommand("version", new ZjdkSet.Version(platformDetection, jdkConfigService, manifestSyncService, domainEventPublisher)))
             .addSubcommand("env", new ZjdkEnv(platformDetection, jdkConfigService, jdkReleaseService))
             .addSubcommand("list", new CommandLine(new ZjdkList())
                 .addSubcommand("available", new ZjdkList.Available(platformDetection, catalogService)))

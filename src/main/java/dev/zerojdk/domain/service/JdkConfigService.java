@@ -4,8 +4,6 @@ import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.port.out.config.JdkConfigRepository;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Optional;
-
 import dev.zerojdk.domain.model.Platform;
 
 @RequiredArgsConstructor
@@ -21,7 +19,7 @@ public class JdkConfigService {
         catalogService.findByIdentifier(platform, identifier)
             .orElseThrow(() -> new UnsupportedIdentifierException(identifier));
 
-        jdkConfigRepository.writeVersion(global, identifier);
+        jdkConfigRepository.updateVersion(global, identifier);
     }
 
     public void createConfiguration(Platform platform, String identifier, boolean global) {

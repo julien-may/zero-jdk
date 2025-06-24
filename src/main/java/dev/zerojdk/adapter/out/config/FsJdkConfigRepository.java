@@ -20,7 +20,8 @@ public class FsJdkConfigRepository implements JdkConfigRepository {
     }
 
     @Override
-    public void writeVersion(boolean global, String version) {
+    public void updateVersion(boolean global, String version) {
+        baseLayout.init();
         writeVersion(baseLayout.configFile(global), version);
     }
 

@@ -8,6 +8,12 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 public class FsBaseLayout implements BaseLayout {
+    @SneakyThrows
+    @Override
+    public Path init() {
+        return Files.createDirectories(Path.of(".zjdk"));
+    }
+
     /**
      * Locate the directory that contains a *zjdk* configuration.
      *

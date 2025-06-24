@@ -1,6 +1,7 @@
 package dev.zerojdk.domain.service;
 
 import dev.zerojdk.domain.model.JdkVersion;
+import dev.zerojdk.domain.service.release.JdkReleaseService;
 import lombok.RequiredArgsConstructor;
 
 import dev.zerojdk.domain.model.Platform;

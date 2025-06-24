@@ -4,7 +4,7 @@ import dev.zerojdk.adapter.out.UnmanagedDirectoryException;
 import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.port.out.PlatformDetection;
 import dev.zerojdk.domain.service.JdkConfigService;
-import dev.zerojdk.domain.service.JdkReleaseService;
+import dev.zerojdk.domain.service.release.JdkReleaseService;
 import lombok.RequiredArgsConstructor;
 import picocli.CommandLine;
 

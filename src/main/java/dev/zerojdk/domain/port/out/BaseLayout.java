@@ -4,6 +4,8 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 public interface BaseLayout {
+    Path init();
+
     Optional<Path> discoverProjectRoot();
 
     Path baseDirectory(boolean global);
