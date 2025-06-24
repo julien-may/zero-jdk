@@ -17,6 +17,8 @@ import dev.zerojdk.adapter.out.catalog.provider.JsonCatalogStorageProvider;
 import dev.zerojdk.adapter.out.config.FsConfigRepository;
 import dev.zerojdk.adapter.out.download.HttpDownloadService;
 import dev.zerojdk.adapter.out.index.FsRegistrationRepository;
+import dev.zerojdk.adapter.out.release.FsJdkInstaller;
+import dev.zerojdk.adapter.out.release.FsJdkReleaseLayout;
 import dev.zerojdk.adapter.out.wrapper.*;
 import dev.zerojdk.domain.port.out.ProjectLayout;
 import dev.zerojdk.domain.port.out.catalog.CatalogMetadataRepository;
@@ -24,6 +26,8 @@ import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import dev.zerojdk.domain.port.out.config.ConfigRepository;
 import dev.zerojdk.domain.port.out.download.DownloadService;
 import dev.zerojdk.domain.port.out.index.RegistrationRepository;
+import dev.zerojdk.domain.port.out.release.JdkInstaller;
+import dev.zerojdk.domain.port.out.release.JdkReleaseLayout;
 import dev.zerojdk.domain.port.out.wrapper.*;
 import dev.zerojdk.domain.service.*;
 import dev.zerojdk.infrastructure.unarchiver.UnarchiverFactory;
@@ -57,17 +61,22 @@ public class Application implements Runnable {
         // Config and JDK services
         ConfigRepository configRepository = new FsConfigRepository(projectLayout);
         ConfigService configService = new ConfigService(configRepository, catalogService);
+
+        // Jdk Release
+        JdkReleaseLayout jdkReleaseLayout = new FsJdkReleaseLayout(projectLayout);
         RegistrationRepository registrationRepository = new FsRegistrationRepository();
-        JdkReleaseService jdkReleaseService = new JdkReleaseService(downloadService, unarchiverFactory, catalogService, registrationRepository);
+        JdkInstaller jdkInstaller = new FsJdkInstaller(registrationRepository);
+        JdkReleaseService jdkReleaseService = new JdkReleaseService(jdkReleaseLayout, downloadService, unarchiverFactory, catalogService, registrationRepository, jdkInstaller);
+
+        // Sync aggregation
         ManifestSyncService manifestSyncService = new ManifestSyncService(catalogService, configService, jdkReleaseService);
 
         // Wrapper
         WrapperLayout wrapperLayout = new FsWrapperLayout(projectLayout);
-        WrapperBinaryRepository wrapperBinaryRepository = new FsWrapperBinaryRepository(projectLayout);
         WrapperConfigRepository wrapperConfigRepository = new FsWrapperConfigRepository(wrapperLayout);
-        WrapperScriptRepository wrapperScriptRepository = new FsWrapperScriptRepository(projectLayout);
+        WrapperScriptRepository wrapperScriptRepository = new FsWrapperScriptRepository(wrapperLayout);
         WrapperReleaseLocator wrapperReleaseLocator = new WrapperReleaseLocatorAdapter();
-        WrapperScriptGenerator wrapperScriptGenerator = new WrapperScriptGenerator(wrapperLayout, wrapperBinaryRepository);
+        WrapperScriptGenerator wrapperScriptGenerator = new WrapperScriptGenerator(wrapperLayout);
         WrapperInstaller wrapperInstaller = new WrapperInstaller(wrapperConfigRepository, wrapperScriptRepository, wrapperReleaseLocator, wrapperScriptGenerator);
 
         // CLI setup

@@ -17,7 +17,7 @@ public class FsRegistrationRepository implements RegistrationRepository {
 
     @SneakyThrows
     @Override
-    public void register(InstallationRecord installationRecord) {
+    public InstallationRecord register(InstallationRecord installationRecord) {
         File info = installationRecord.installRoot()
             .resolve(".info")
             .toFile();
@@ -28,6 +28,8 @@ public class FsRegistrationRepository implements RegistrationRepository {
         try (FileOutputStream fos = new FileOutputStream(info)) {
             props.store(fos, null);
         }
+
+        return installationRecord;
     }
 
     @SneakyThrows

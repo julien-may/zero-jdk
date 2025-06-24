@@ -1,8 +1,7 @@
 package dev.zerojdk.adapter.out.wrapper;
 
-import dev.zerojdk.domain.port.out.ProjectLayout;
+import dev.zerojdk.domain.port.out.wrapper.WrapperLayout;
 import dev.zerojdk.domain.port.out.wrapper.WrapperScriptRepository;
-import dev.zerojdk.domain.service.ConfigurationNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
@@ -14,20 +13,17 @@ import java.util.HashSet;
 
 @RequiredArgsConstructor
 public class FsWrapperScriptRepository implements WrapperScriptRepository {
-    private final ProjectLayout projectLayout;
+    private final WrapperLayout wrapperLayout;
 
     @SneakyThrows
     @Override
     public void save(String content) {
-        Path wrapperPath = wrapperPath(projectLayout.findProjectRoot(false)
-            .orElseThrow(ConfigurationNotFoundException::new));// TODO: Use different exception
-
-        Files.writeString(wrapperPath, content, StandardCharsets.UTF_8);
+        Files.writeString(wrapperLayout.scriptPath(), content, StandardCharsets.UTF_8);
 
         // Make it executable
-        var perms = new HashSet<>(Files.getPosixFilePermissions(wrapperPath));
+        var perms = new HashSet<>(Files.getPosixFilePermissions(wrapperLayout.scriptPath()));
         perms.add(PosixFilePermission.OWNER_EXECUTE);
-        Files.setPosixFilePermissions(wrapperPath, perms);
+        Files.setPosixFilePermissions(wrapperLayout.scriptPath(), perms);
     }
 
     private Path wrapperPath(Path parent) {

@@ -5,6 +5,6 @@ import dev.zerojdk.domain.model.InstallationRecord;
 import java.util.Optional;
 
 public interface RegistrationRepository {
-    void register(InstallationRecord installationRecord);
+    InstallationRecord register(InstallationRecord installationRecord);
     Optional<InstallationRecord> find(String identifier);
 }

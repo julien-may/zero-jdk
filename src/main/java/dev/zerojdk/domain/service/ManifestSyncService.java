@@ -19,6 +19,6 @@ public class ManifestSyncService {
             .findByIdentifier(platform, identifier)
             .orElseThrow(() -> new UnsupportedIdentifierException(identifier));
 
-        jdkReleaseService.ensureRelease(configuredJdkVersion);
+        jdkReleaseService.installIfAbsent(configuredJdkVersion);
     }
 }

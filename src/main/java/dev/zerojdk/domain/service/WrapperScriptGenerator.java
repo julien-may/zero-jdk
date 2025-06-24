@@ -1,6 +1,5 @@
 package dev.zerojdk.domain.service;
 
-import dev.zerojdk.domain.port.out.wrapper.WrapperBinaryRepository;
 import dev.zerojdk.domain.port.out.wrapper.WrapperLayout;
 import lombok.RequiredArgsConstructor;
 
@@ -9,11 +8,9 @@ import java.nio.file.Path;
 @RequiredArgsConstructor
 public class WrapperScriptGenerator {
     private final WrapperLayout wrapperLayout;
-    private final WrapperBinaryRepository wrapperBinaryRepository;
 
     public String generateScript(String downloadUrl) {
-        Path binPath = wrapperLayout.wrapperDirectory()
-            .relativize(wrapperBinaryRepository.executable());
+        Path binPath = wrapperLayout.binaryPath();
 
         return """
             #!/usr/bin/env sh
