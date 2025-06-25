@@ -1,13 +1,6 @@
 package dev.zerojdk;
 
-import dev.zerojdk.adapter.in.cli.ZjdkEnv;
-import dev.zerojdk.adapter.in.cli.ZjdkUpdate;
-import dev.zerojdk.adapter.in.cli.ZjdkList;
-import dev.zerojdk.adapter.in.cli.ZjdkInit;
-import dev.zerojdk.adapter.in.cli.ZjdkSet;
-import dev.zerojdk.adapter.in.cli.ZjdkShell;
-import dev.zerojdk.adapter.in.cli.ZjdkSync;
-import dev.zerojdk.adapter.in.cli.ZjdkWrapper;
+import dev.zerojdk.adapter.in.cli.*;
 
 import dev.zerojdk.adapter.out.FsBaseLayout;
 import dev.zerojdk.adapter.out.SystemPropertyBasedPlatformDetection;
@@ -129,14 +122,18 @@ public class Application implements Runnable {
             .addSubcommand("init", new ZjdkInit(platformDetection, jdkConfigService, manifestSyncService, domainEventPublisher))
             .addSubcommand("sync", new ZjdkSync(platformDetection, manifestSyncService, domainEventPublisher))
             .addSubcommand("wrapper", new ZjdkWrapper(platformDetection, wrapperInstaller))
-            .addSubcommand("set", new CommandLine(new ZjdkSet())
-                .addSubcommand("version", new ZjdkSet.Version(platformDetection, jdkConfigService, manifestSyncService, domainEventPublisher)))
-            .addSubcommand("env", new ZjdkEnv(platformDetection, jdkConfigService, jdkReleaseService))
+
             .addSubcommand("list", new CommandLine(new ZjdkList())
                 .addSubcommand("available", new ZjdkList.Available(platformDetection, catalogService)))
+            .addSubcommand("set", new CommandLine(new ZjdkSet())
+                .addSubcommand("version", new ZjdkSet.Version(platformDetection, jdkConfigService, manifestSyncService, domainEventPublisher)))
+            .addSubcommand("info", new ZjdkInfo(platformDetection, jdkConfigService, catalogService))
+
+            .addSubcommand("env", new ZjdkEnv(platformDetection, jdkConfigService, jdkReleaseService))
             .addSubcommand("shell", new CommandLine(new ZjdkShell())
                 .addSubcommand("install", new CommandLine(new ZjdkShell.Install())
                     .addSubcommand("zsh", new ZjdkShell.Install.Zsh(shellExtensionWriter))))
+
             .addSubcommand("update", new ZjdkUpdate(catalogStorageService))
             .addSubcommand(new CommandLine.HelpCommand())
             .setExecutionExceptionHandler(new ExecutionExceptionHandler());
@@ -144,7 +141,7 @@ public class Application implements Runnable {
         // Help page rendering
         Map<String, List<String>> sections = new LinkedHashMap<>();
         sections.put("%nBootstrap%n", List.of("init", "sync", "wrapper"));
-        sections.put("%nVersion Management%n", List.of("list", "set"));
+        sections.put("%nVersion Management%n", List.of("list", "set", "info"));
         sections.put("%nEnvironment%n", List.of("env", "shell"));
         sections.put("%nMaintenance%n", List.of("update"));
         CommandGroupRenderer renderer = new CommandGroupRenderer(sections);
