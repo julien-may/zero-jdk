@@ -1,6 +1,6 @@
 package dev.zerojdk.adapter.out.wrapper;
 
-import dev.zerojdk.domain.model.WrapperConfig;
+import dev.zerojdk.domain.model.wrapper.WrapperConfig;
 import dev.zerojdk.domain.port.out.wrapper.WrapperConfigRepository;
 import dev.zerojdk.domain.port.out.wrapper.WrapperLayout;
 import lombok.RequiredArgsConstructor;

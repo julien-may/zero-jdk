@@ -1,8 +1,8 @@
 package dev.zerojdk.adapter.out.release;
 
-import dev.zerojdk.domain.model.InstallationRecord;
+import dev.zerojdk.domain.model.release.InstallationRecord;
 import dev.zerojdk.domain.model.JdkVersion;
-import dev.zerojdk.domain.port.out.index.RegistrationRepository;
+import dev.zerojdk.domain.port.out.release.JdkRegistrationRepository;
 import dev.zerojdk.domain.port.out.release.JdkInstaller;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 
 @RequiredArgsConstructor
 public class FsJdkInstaller implements JdkInstaller {
-    private final RegistrationRepository repository;
+    private final JdkRegistrationRepository repository;
 
     @Override
     public InstallationRecord install(JdkVersion version, Path extractedDir) {

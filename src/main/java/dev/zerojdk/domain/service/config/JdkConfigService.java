@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 
 import dev.zerojdk.domain.model.Platform;
 
+import java.util.Optional;
+
 @RequiredArgsConstructor
 public class JdkConfigService {
     private final JdkConfigRepository jdkConfigRepository;
@@ -16,22 +18,24 @@ public class JdkConfigService {
         return jdkConfigRepository.readVersion(global);
     }
 
-    public void updateConfiguration(Platform platform, String identifier, boolean global) {
-        catalogService.findByIdentifier(platform, identifier)
-            .orElseThrow(() -> new UnsupportedIdentifierException(identifier));
+    public void updateConfiguration(Platform platform, String version, boolean global) {
+        catalogService.findByIdentifier(platform, version)
+            .orElseThrow(() -> new UnsupportedIdentifierException(version));
 
-        jdkConfigRepository.updateVersion(global, identifier);
+        jdkConfigRepository.update(global, version);
     }
 
-    public void createConfiguration(Platform platform, String identifier, boolean global) {
-        if (identifier == null) {
-            identifier = catalogService.findLatestByDistribution(platform, "Temurin").stream()
+    public void createConfiguration(Platform platform, String version, boolean global) {
+        String identifier = Optional.ofNullable(version)
+            .orElseGet(() -> catalogService.findLatestByDistribution(platform, "Temurin").stream()
                 .filter(jdkVersion -> jdkVersion.getSupport() == JdkVersion.Support.LTS)
                 .map(JdkVersion::getIdentifier)
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("There was an issue resolving the default identifier"));
-        }
+                .orElseThrow(() -> new RuntimeException("There was an issue resolving the default version")));
 
-        updateConfiguration(platform, identifier, global);
+        catalogService.findByIdentifier(platform, identifier)
+            .orElseThrow(() -> new UnsupportedIdentifierException(identifier));
+
+        jdkConfigRepository.create(global, identifier);
     }
 }

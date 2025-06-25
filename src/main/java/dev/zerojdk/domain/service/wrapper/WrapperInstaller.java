@@ -1,7 +1,7 @@
 package dev.zerojdk.domain.service.wrapper;
 
 import dev.zerojdk.domain.model.Platform;
-import dev.zerojdk.domain.model.WrapperConfig;
+import dev.zerojdk.domain.model.wrapper.WrapperConfig;
 import dev.zerojdk.domain.port.out.wrapper.WrapperReleaseLocator;
 import dev.zerojdk.domain.port.out.wrapper.WrapperConfigRepository;
 import dev.zerojdk.domain.port.out.wrapper.WrapperScriptRepository;

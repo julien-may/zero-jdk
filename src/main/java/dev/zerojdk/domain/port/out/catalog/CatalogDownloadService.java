@@ -1,6 +1,6 @@
 package dev.zerojdk.domain.port.out.catalog;
 
-import dev.zerojdk.domain.model.Catalog;
+import dev.zerojdk.domain.model.catalog.Catalog;
 import dev.zerojdk.domain.service.catalog.CatalogUnchangedException;
 
 public interface CatalogDownloadService {

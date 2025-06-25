@@ -1,10 +1,10 @@
-package dev.zerojdk.domain.port.out.index;
+package dev.zerojdk.domain.port.out.release;
 
-import dev.zerojdk.domain.model.InstallationRecord;
+import dev.zerojdk.domain.model.release.InstallationRecord;
 
 import java.util.Optional;
 
-public interface RegistrationRepository {
+public interface JdkRegistrationRepository {
     InstallationRecord register(InstallationRecord installationRecord);
     Optional<InstallationRecord> find(String identifier);
 }

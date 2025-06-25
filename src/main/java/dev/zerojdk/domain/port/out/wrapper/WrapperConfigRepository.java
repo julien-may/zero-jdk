@@ -1,6 +1,6 @@
 package dev.zerojdk.domain.port.out.wrapper;
 
-import dev.zerojdk.domain.model.WrapperConfig;
+import dev.zerojdk.domain.model.wrapper.WrapperConfig;
 
 import java.util.Optional;
 

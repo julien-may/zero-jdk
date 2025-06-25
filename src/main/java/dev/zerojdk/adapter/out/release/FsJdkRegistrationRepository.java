@@ -1,7 +1,7 @@
-package dev.zerojdk.adapter.out.index;
+package dev.zerojdk.adapter.out.release;
 
-import dev.zerojdk.domain.model.InstallationRecord;
-import dev.zerojdk.domain.port.out.index.RegistrationRepository;
+import dev.zerojdk.domain.model.release.InstallationRecord;
+import dev.zerojdk.domain.port.out.release.JdkRegistrationRepository;
 import dev.zerojdk.domain.port.out.release.JdkReleaseLayout;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -14,7 +14,7 @@ import java.util.Optional;
 import java.util.Properties;
 
 @RequiredArgsConstructor
-public class FsRegistrationRepository implements RegistrationRepository {
+public class FsJdkRegistrationRepository implements JdkRegistrationRepository {
     private final JdkReleaseLayout jdkReleaseLayout;
 
     @SneakyThrows

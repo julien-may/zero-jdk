@@ -1,8 +1,8 @@
 package dev.zerojdk.domain.service.catalog;
 
-import dev.zerojdk.domain.model.Catalog;
+import dev.zerojdk.domain.model.catalog.Catalog;
 import dev.zerojdk.domain.port.out.catalog.CatalogDownloadService;
-import dev.zerojdk.domain.model.CatalogStorage;
+import dev.zerojdk.domain.model.catalog.storage.CatalogStorage;
 import dev.zerojdk.domain.port.out.catalog.CatalogStorageMetadataRepository;
 import lombok.RequiredArgsConstructor;
 

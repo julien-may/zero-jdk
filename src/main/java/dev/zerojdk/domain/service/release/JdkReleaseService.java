@@ -1,11 +1,11 @@
 package dev.zerojdk.domain.service.release;
 
-import dev.zerojdk.domain.model.JdkRelease;
+import dev.zerojdk.domain.model.release.JdkRelease;
 import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.port.out.download.DownloadService;
 import dev.zerojdk.domain.model.JdkVersion;
 import dev.zerojdk.domain.port.out.event.DomainEventPublisher;
-import dev.zerojdk.domain.port.out.index.RegistrationRepository;
+import dev.zerojdk.domain.port.out.release.JdkRegistrationRepository;
 import dev.zerojdk.domain.port.out.release.JdkInstaller;
 import dev.zerojdk.domain.port.out.release.JdkReleaseLayout;
 import dev.zerojdk.domain.port.out.unarchiving.UnarchiverFactory;
@@ -27,7 +27,7 @@ public class JdkReleaseService {
     private final DownloadService downloadService;
     private final UnarchiverFactory unarchiverFactory;
     private final CatalogService catalogService;
-    private final RegistrationRepository repository;
+    private final JdkRegistrationRepository repository;
     private final JdkInstaller jdkInstaller;
 
     @SneakyThrows

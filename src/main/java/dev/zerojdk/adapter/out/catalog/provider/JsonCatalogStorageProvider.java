@@ -1,6 +1,6 @@
 package dev.zerojdk.adapter.out.catalog.provider;
 
-import dev.zerojdk.domain.model.CatalogStorage;
+import dev.zerojdk.domain.model.catalog.storage.CatalogStorage;
 import dev.zerojdk.domain.service.catalog.CatalogStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;

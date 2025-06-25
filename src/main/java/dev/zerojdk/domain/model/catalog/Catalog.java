@@ -1,4 +1,4 @@
-package dev.zerojdk.domain.model;
+package dev.zerojdk.domain.model.catalog;
 
 import java.nio.file.Path;
 

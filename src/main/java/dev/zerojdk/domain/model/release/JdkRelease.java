@@ -1,4 +1,6 @@
-package dev.zerojdk.domain.model;
+package dev.zerojdk.domain.model.release;
+
+import dev.zerojdk.domain.model.JdkVersion;
 
 import java.nio.file.Path;
 

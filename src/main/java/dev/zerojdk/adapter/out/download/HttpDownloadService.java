@@ -14,6 +14,9 @@ import java.nio.file.*;
 import java.util.*;
 
 public class HttpDownloadService implements DownloadService {
+    private static final int BUFFER_SIZE = 8192;
+
+    @Override
     public File download(String uri) {
         return download(uri, null);
     }
@@ -21,85 +24,90 @@ public class HttpDownloadService implements DownloadService {
     @SneakyThrows
     @Override
     public File download(String uri, ProgressListener progressListener) {
-        HttpRequest httpRequest = HttpRequest
-            .newBuilder(URI.create(uri))
-            .build();
-
+        HttpRequest request = HttpRequest.newBuilder(URI.create(uri)).build();
         HttpClient.Builder httpClientBuilder = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL);
 
-        Path tmp = Files.createTempFile("dl-", ".part");
+        Path tempFile = Files.createTempFile("dl-", ".part");
 
         try (HttpClient httpClient = httpClientBuilder.build()) {
             HttpResponse<InputStream> response = httpClient.send(
-                httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+                request, HttpResponse.BodyHandlers.ofInputStream());
 
             long totalBytes = response.headers()
                 .firstValueAsLong("Content-Length")
                 .orElse(-1);
 
-            String fileName = response.headers()
-                .firstValue("Content-Disposition")
-                .flatMap(this::parseFilename)
-                .orElseGet(() -> Paths.get(response.uri().getPath())
-                    .getFileName().toString());
+            String fileName = resolveFileName(response);
 
-            try (InputStream in = response.body();
-                 OutputStream out = Files.newOutputStream(tmp, StandardOpenOption.WRITE)) {
+            writeToFile(response.body(), tempFile, totalBytes, progressListener);
 
-                byte[] buffer = new byte[8192];
-                long bytesRead = 0;
-                int len;
+            Path targetFile = tempFile.getParent().resolve(fileName);
+            Files.move(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
 
-                long percentage;
-                long prevPercentage = -1;
-                while ((len = in.read(buffer)) != -1) {
-                    out.write(buffer, 0, len);
-                    bytesRead += len;
+            return targetFile.toFile();
+        }
+    }
 
-                    percentage = bytesRead * 100 / totalBytes;
+    @SneakyThrows
+    private void writeToFile(InputStream input, Path outputPath, long totalBytes, ProgressListener progressListener) {
 
-                    if (progressListener != null) {
-                        // Throttle
-                        if (prevPercentage == -1 || percentage > prevPercentage) {
-                            progressListener.onProgress(bytesRead, totalBytes);
-                        }
+        try (InputStream in = input;
+             OutputStream out = Files.newOutputStream(outputPath, StandardOpenOption.WRITE)) {
+
+            byte[] buffer = new byte[BUFFER_SIZE];
+            long bytesRead = 0;
+            long lastReportedPercentage = -1;
+
+            int len;
+            while ((len = in.read(buffer)) != -1) {
+                out.write(buffer, 0, len);
+                bytesRead += len;
+
+                if (progressListener != null && totalBytes > 0) {
+                    long percentage = bytesRead * 100 / totalBytes;
+                    if (percentage != lastReportedPercentage) {
+                        progressListener.onProgress(bytesRead, totalBytes);
+                        lastReportedPercentage = percentage;
                     }
-
-                    prevPercentage = percentage;
                 }
             }
-
-            Path target = tmp.getParent().resolve(fileName);
-            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
-
-            return target.toFile();
         }
+    }
+
+    private String resolveFileName(HttpResponse<?> response) {
+        return response.headers()
+            .firstValue("Content-Disposition")
+            .flatMap(this::parseFilename)
+            .orElseGet(() -> {
+                Path path = Paths.get(response.uri().getPath());
+                return path.getFileName().toString();
+            });
     }
 
     private Optional<String> parseFilename(String disposition) {
         if (disposition == null) return Optional.empty();
 
         for (String part : disposition.split(";")) {
-            part = part.trim();
+            String trimmed = part.trim();
 
-            if (part.toLowerCase().startsWith("filename*=")) {
-                String v = part.substring(10);
-                int pos = v.indexOf("''");
-                if (pos > 0) {
-                    return Optional.of(
-                        URLDecoder.decode(v.substring(pos + 2), StandardCharsets.UTF_8));
+            if (trimmed.toLowerCase().startsWith("filename*=")) {
+                String value = trimmed.substring(10);
+                int idx = value.indexOf("''");
+                if (idx > 0) {
+                    return Optional.of(URLDecoder.decode(value.substring(idx + 2), StandardCharsets.UTF_8));
                 }
             }
 
-            if (part.toLowerCase().startsWith("filename=")) {
-                String v = part.substring(9).trim();
-                if (v.startsWith("\"") && v.endsWith("\"") && v.length() >= 2) {
-                    v = v.substring(1, v.length() - 1);
+            if (trimmed.toLowerCase().startsWith("filename=")) {
+                String value = trimmed.substring(9).trim();
+                if (value.startsWith("\"") && value.endsWith("\"") && value.length() >= 2) {
+                    value = value.substring(1, value.length() - 1);
                 }
-                return Optional.of(v);
+                return Optional.of(value);
             }
         }
+
         return Optional.empty();
     }
 }

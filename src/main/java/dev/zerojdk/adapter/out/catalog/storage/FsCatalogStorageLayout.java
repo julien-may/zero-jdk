@@ -1,4 +1,4 @@
-package dev.zerojdk.adapter.out.catalog;
+package dev.zerojdk.adapter.out.catalog.storage;
 
 import dev.zerojdk.domain.port.out.BaseLayout;
 import dev.zerojdk.domain.port.out.catalog.CatalogStorageLayout;

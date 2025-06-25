@@ -12,16 +12,18 @@ import dev.zerojdk.adapter.in.cli.ZjdkWrapper;
 import dev.zerojdk.adapter.out.FsBaseLayout;
 import dev.zerojdk.adapter.out.SystemPropertyBasedPlatformDetection;
 import dev.zerojdk.adapter.out.UnmanagedDirectoryException;
-import dev.zerojdk.adapter.out.catalog.FsCatalogStorageLayout;
-import dev.zerojdk.adapter.out.catalog.FsCatalogStorageMetadataRepository;
-import dev.zerojdk.adapter.out.catalog.HttpCatalogDownloadService;
+import dev.zerojdk.adapter.out.catalog.storage.FsCatalogStorageLayout;
+import dev.zerojdk.adapter.out.catalog.storage.FsCatalogStorageMetadataRepository;
+import dev.zerojdk.adapter.out.catalog.storage.download.HttpCatalogDownloadService;
 import dev.zerojdk.adapter.out.catalog.JsonCatalogRepository;
 import dev.zerojdk.adapter.out.catalog.provider.CatalogStorageProvider;
 import dev.zerojdk.adapter.out.catalog.provider.JsonCatalogStorageProvider;
+import dev.zerojdk.adapter.out.catalog.storage.download.client.DefaultGitHubReleaseClient;
+import dev.zerojdk.adapter.out.catalog.storage.download.client.GitHubReleaseClient;
 import dev.zerojdk.adapter.out.config.FsJdkConfigRepository;
 import dev.zerojdk.adapter.out.download.HttpDownloadService;
 import dev.zerojdk.adapter.out.event.InMemoryDomainEventPublisher;
-import dev.zerojdk.adapter.out.index.FsRegistrationRepository;
+import dev.zerojdk.adapter.out.release.FsJdkRegistrationRepository;
 import dev.zerojdk.adapter.out.release.FsJdkInstaller;
 import dev.zerojdk.adapter.out.release.FsJdkReleaseLayout;
 import dev.zerojdk.adapter.out.shell.FsShellExtensionLayout;
@@ -35,7 +37,7 @@ import dev.zerojdk.domain.port.out.catalog.CatalogStorageMetadataRepository;
 import dev.zerojdk.domain.port.out.catalog.CatalogRepository;
 import dev.zerojdk.domain.port.out.config.JdkConfigRepository;
 import dev.zerojdk.domain.port.out.download.DownloadService;
-import dev.zerojdk.domain.port.out.index.RegistrationRepository;
+import dev.zerojdk.domain.port.out.release.JdkRegistrationRepository;
 import dev.zerojdk.domain.port.out.release.JdkInstaller;
 import dev.zerojdk.domain.port.out.release.JdkReleaseLayout;
 import dev.zerojdk.domain.port.out.shell.ShellExtensionLayout;
@@ -83,7 +85,9 @@ public class Application implements Runnable {
         // Catalog Storage setup
         CatalogStorageLayout catalogStorageLayout = new FsCatalogStorageLayout(baseLayout);
         CatalogStorageMetadataRepository catalogStorageMetadataRepository = new FsCatalogStorageMetadataRepository(catalogStorageLayout);
-        CatalogDownloadService catalogDownloadService = new HttpCatalogDownloadService(downloadService, unarchiverFactory);
+
+        GitHubReleaseClient gitHubReleaseClient = new DefaultGitHubReleaseClient(downloadService);
+        CatalogDownloadService catalogDownloadService = new HttpCatalogDownloadService(gitHubReleaseClient, unarchiverFactory);
         CatalogStorageService catalogStorageService = new CatalogStorageService(catalogDownloadService, catalogStorageMetadataRepository);
         CatalogStorageProvider catalogStorageProvider = new JsonCatalogStorageProvider(catalogStorageService);
 
@@ -97,10 +101,10 @@ public class Application implements Runnable {
 
         // Jdk Release
         JdkReleaseLayout jdkReleaseLayout = new FsJdkReleaseLayout(baseLayout);
-        RegistrationRepository registrationRepository = new FsRegistrationRepository(jdkReleaseLayout);
-        JdkInstaller jdkInstaller = new FsJdkInstaller(registrationRepository);
+        JdkRegistrationRepository jdkRegistrationRepository = new FsJdkRegistrationRepository(jdkReleaseLayout);
+        JdkInstaller jdkInstaller = new FsJdkInstaller(jdkRegistrationRepository);
         JdkReleaseService jdkReleaseService = new JdkReleaseService(domainEventPublisher, jdkReleaseLayout, downloadService,
-            unarchiverFactory, catalogService, registrationRepository, jdkInstaller);
+            unarchiverFactory, catalogService, jdkRegistrationRepository, jdkInstaller);
 
         // Sync aggregation
         ManifestSyncService manifestSyncService = new ManifestSyncService(catalogService, jdkConfigService, jdkReleaseService);

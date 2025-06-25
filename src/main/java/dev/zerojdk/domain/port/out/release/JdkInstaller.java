@@ -1,6 +1,6 @@
 package dev.zerojdk.domain.port.out.release;
 
-import dev.zerojdk.domain.model.InstallationRecord;
+import dev.zerojdk.domain.model.release.InstallationRecord;
 import dev.zerojdk.domain.model.JdkVersion;
 
 import java.nio.file.Path;

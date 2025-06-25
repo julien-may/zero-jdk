@@ -8,12 +8,6 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 public class FsBaseLayout implements BaseLayout {
-    @SneakyThrows
-    @Override
-    public Path init() {
-        return Files.createDirectories(Path.of(".zjdk"));
-    }
-
     /**
      * Locate the directory that contains a *zjdk* configuration.
      *
@@ -42,13 +36,11 @@ public class FsBaseLayout implements BaseLayout {
         return Optional.empty();
     }
 
-    @SneakyThrows
     @Override
     public Path baseDirectory(boolean global) {
         if (global) {
-            return Files.createDirectories(
-                Path.of(System.getProperty("user.home"))
-                    .resolve(".zjdk"));
+            return createBaseDirectory(
+                Path.of(System.getProperty("user.home")));
         }
 
         return discoverProjectRoot()
@@ -59,5 +51,21 @@ public class FsBaseLayout implements BaseLayout {
     @Override
     public Path configFile(boolean global) {
         return baseDirectory(global).resolve("config.properties");
+    }
+
+    @Override
+    public void ensureBaseDirectory(boolean global) {
+        if (global) {
+            createBaseDirectory(
+                Path.of(System.getProperty("user.home")));
+        } else {
+            createBaseDirectory(Path.of("."));
+        }
+    }
+
+    @SneakyThrows
+    private Path createBaseDirectory(Path root) {
+        return Files.createDirectories(
+            root.resolve(".zjdk"));
     }
 }

@@ -9,12 +9,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.PosixFileAttributeView;
-import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.*;
 import java.util.*;
 
 @RequiredArgsConstructor
@@ -22,147 +17,117 @@ public class TarUnarchiver implements Unarchiver {
     private final Path archive;
     private final Compression compression;
 
-    @SneakyThrows
     @Override
+    @SneakyThrows
     public Path extract(Path destination) {
-        Optional<String> rootDirectory = findRootDirectory(archive.toFile());
+        String rootDirName = findCommonRootDirectory(archive.toFile());
+        List<Runnable> deferredSymlinks = new ArrayList<>();
 
-        // we always want to extract into  destination/alternativeName
-        Path extractRoot = destination;
+        try (TarArchiveInputStream tar = openTarStream(archive)) {
+            TarArchiveEntry entry;
 
-        try (FileInputStream fileInputStream = new FileInputStream(archive.toFile())) {
-            try (BufferedInputStream inputStream = new BufferedInputStream(fileInputStream);
-                 TarArchiveInputStream tar = new TarArchiveInputStream(new GzipCompressorInputStream(inputStream))) {
+            while ((entry = tar.getNextEntry()) != null) {
+                String entryName = normalizeEntryName(entry.getName(), rootDirName);
 
-                TarArchiveEntry entry;
-                String rootDirName = rootDirectory.orElse(null);
-
-                // links are created at the end, once everything else is unpacked
-                List<Runnable> deferredSymlinks = new ArrayList<>();
-
-                while ((entry = tar.getNextEntry()) != null) {
-                    String entryName = entry.getName();
-
-                    if (rootDirName != null) {
-                        if (entryName.equals(rootDirName) ||
-                            entryName.equals(rootDirName + "/")) {
-                            // this is the root dir entry itself → nothing to extract
-                            continue;
-                        }
-                        if (entryName.startsWith(rootDirName + "/")) {
-                            entryName = entryName.substring(rootDirName.length() + 1);
-                        }
-                    }
-
-                    Path target = extractRoot.resolve(entryName).normalize();
-
-                    // defence-in-depth: prevent “../” escaping
-                    if (!target.startsWith(extractRoot)) {
-                        throw new IOException("Entry tries to escape target dir: " + entry.getName());
-                    }
-
-                    if (entry.isDirectory()) {
-                        Files.createDirectories(target);
-                        continue;
-                    }
-
-
-                    /* ---------- symbolic or hard link ---------- */
-                    if (entry.isSymbolicLink() || entry.isLink()) {
-                        String linkTarget = entry.getLinkName();           // may be relative
-                        TarArchiveEntry finalEntry = entry;
-                        Runnable task = () -> {
-                            try {
-                                Files.createDirectories(target.getParent());
-                                if (finalEntry.isSymbolicLink()) {
-                                    Files.deleteIfExists(target);
-                                    Files.createSymbolicLink(
-                                        target, Paths.get(linkTarget));
-                                } else {                               // hard link
-                                    Files.deleteIfExists(target);
-                                    Files.createLink(
-                                        target,
-                                        destination.resolve(linkTarget).normalize());
-                                }
-                            } catch (IOException io) {
-                                throw new UncheckedIOException(io);
-                            }
-                        };
-                        deferredSymlinks.add(task);
-                        continue;
-                    }
-
-
-                    // make sure parent dirs exist for files:
-                    Files.createDirectories(target.getParent());
-
-                    // 1 – copy bytes
-                    Files.copy(tar, target, StandardCopyOption.REPLACE_EXISTING);
-
-                    // 2 – translate mode → Set<PosixFilePermission>
-                    if (Files.getFileStore(target)
-                        .supportsFileAttributeView(PosixFileAttributeView.class)) {
-
-                        int m = entry.getMode();          // e.g. 0755
-                        Set<PosixFilePermission> perms = EnumSet.noneOf(PosixFilePermission.class);
-
-                        if ((m & 0400) != 0) perms.add(PosixFilePermission.OWNER_READ);
-                        if ((m & 0200) != 0) perms.add(PosixFilePermission.OWNER_WRITE);
-                        if ((m & 0100) != 0) perms.add(PosixFilePermission.OWNER_EXECUTE);
-
-                        if ((m & 0040) != 0) perms.add(PosixFilePermission.GROUP_READ);
-                        if ((m & 0020) != 0) perms.add(PosixFilePermission.GROUP_WRITE);
-                        if ((m & 0010) != 0) perms.add(PosixFilePermission.GROUP_EXECUTE);
-
-                        if ((m & 0004) != 0) perms.add(PosixFilePermission.OTHERS_READ);
-                        if ((m & 0002) != 0) perms.add(PosixFilePermission.OTHERS_WRITE);
-                        if ((m & 0001) != 0) perms.add(PosixFilePermission.OTHERS_EXECUTE);
-
-                        // 3 – apply
-                        Files.setPosixFilePermissions(target, perms);
-                    }
+                if (entryName == null) {
+                    continue;
                 }
 
-                /* second pass so link targets are guaranteed to exist */
-                for (Runnable r : deferredSymlinks) r.run();
+                Path target = destination.resolve(entryName).normalize();
 
+                if (!target.startsWith(destination)) {
+                    throw new IOException("Entry tries to escape target dir: " + target);
+                }
+
+                if (entry.isDirectory()) {
+                    Files.createDirectories(target);
+                } else if (entry.isSymbolicLink() || entry.isLink()) {
+                    deferredSymlinks.add(createLinkTask(entry, target, destination));
+                } else {
+                    extractFile(tar, entry, target);
+                }
             }
         }
 
+        deferredSymlinks.forEach(Runnable::run);
         return destination;
     }
 
     @SneakyThrows
-    private static Optional<String> findRootDirectory(File archive) {
-        try (FileInputStream fileInputStream = new FileInputStream(archive)) {
-            try (BufferedInputStream inputStream = new BufferedInputStream(fileInputStream);
-                 TarArchiveInputStream tar = new TarArchiveInputStream(new GzipCompressorInputStream(inputStream))) {
+    private TarArchiveInputStream openTarStream(Path file) {
+        return new TarArchiveInputStream(compression.decompress(
+            new BufferedInputStream(new FileInputStream(file.toFile()))));
+    }
 
-                TarArchiveEntry entry;
+    private String normalizeEntryName(String name, String rootDirName) {
+        if (rootDirName != null) {
+            Path namePath = Path.of(name).normalize();
 
-                String commonRoot = null;
+            if (namePath.equals(Path.of(rootDirName))) {
+                return null;
+            }
 
-                while ((entry = tar.getNextEntry()) != null) {
-                    String name = entry.getName();
+            if (namePath.startsWith(rootDirName + "/")) {
+                return Path.of(rootDirName).relativize(namePath).toString();
+            }
+        }
 
-                    // ignore "." or "./" prefixes that some tools insert
-                    if (name.startsWith("./")) name = name.substring(2);
+        return name;
+    }
 
-                    // skip empty names (possible in pax headers)
-                    if (name.isEmpty()) continue;
+    private Runnable createLinkTask(TarArchiveEntry entry, Path target, Path destination) {
+        return () -> {
+            try {
+                Files.createDirectories(target.getParent());
+                Files.deleteIfExists(target);
 
-                    String first = name.split("/", 2)[0];
+                if (entry.isSymbolicLink()) {
+                    Files.createSymbolicLink(target, Paths.get(entry.getLinkName()));
+                } else {
+                    Files.createLink(target, destination.resolve(entry.getLinkName()).normalize());
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        };
+    }
 
-                    if (commonRoot == null) {
-                        commonRoot = first;
-                    } else if (!commonRoot.equals(first)) {
-                        commonRoot = null;
-                        break;
-                    }
+    @SneakyThrows
+    private void extractFile(TarArchiveInputStream tar, TarArchiveEntry entry, Path target) {
+        Files.createDirectories(target.getParent());
+        Files.copy(tar, target, StandardCopyOption.REPLACE_EXISTING);
+
+        PosixPermissions.setPosixFilePermissions(target, entry.getMode());
+    }
+
+    @SneakyThrows
+    private static String findCommonRootDirectory(File archive) {
+        try (TarArchiveInputStream tar = new TarArchiveInputStream(new GzipCompressorInputStream(
+            new BufferedInputStream(new FileInputStream(archive))))) {
+
+            String commonRoot = null;
+            TarArchiveEntry entry;
+
+            while ((entry = tar.getNextEntry()) != null) {
+                String name = entry.getName();
+                if (name.startsWith("./")) {
+                    name = name.substring(2);
                 }
 
-                return Optional.ofNullable(commonRoot);
+                if (name.isEmpty()) {
+                    continue;
+                }
+
+                String top = name.split("/", 2)[0];
+
+                if (commonRoot == null) {
+                    commonRoot = top;
+                } else if (!commonRoot.equals(top)) {
+                    return null;
+                }
             }
+
+            return commonRoot;
         }
     }
 }

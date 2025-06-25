@@ -1,6 +1,6 @@
 package dev.zerojdk.domain.port.out.catalog;
 
-import dev.zerojdk.domain.model.CatalogStorage;
+import dev.zerojdk.domain.model.catalog.storage.CatalogStorage;
 
 import java.util.Optional;
 
