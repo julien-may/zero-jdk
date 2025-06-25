@@ -2,6 +2,7 @@ package dev.zerojdk.adapter.in.cli;
 
 import dev.zerojdk.adapter.in.cli.event.CompositeConsoleEventHandler;
 import dev.zerojdk.adapter.in.cli.event.JdkDownloadProgressPrinter;
+import dev.zerojdk.adapter.out.config.ConfigFileAlreadyExistsException;
 import dev.zerojdk.adapter.out.event.InMemoryDomainEventPublisher;
 import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.port.out.PlatformDetection;
@@ -29,11 +30,14 @@ public class ZjdkInit implements Runnable {
         new CompositeConsoleEventHandler(
             new JdkDownloadProgressPrinter()).register(eventPublisher);
 
-//        System.out.print("Initializing... ");
-
         Platform platform = platformDetection.detect();
 
-        jdkConfigService.createConfiguration(platform, version, global);
+        try {
+            jdkConfigService.createConfiguration(platform, version, global);
+        } catch (ConfigFileAlreadyExistsException e) {
+            System.err.println("Already initialized. Run 'set version' to modify.");
+        }
+
         manifestSyncService.sync(platform, global);
     }
 }

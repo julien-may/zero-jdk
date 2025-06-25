@@ -7,6 +7,7 @@ import lombok.SneakyThrows;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 
@@ -27,6 +28,11 @@ public class FsJdkConfigRepository implements JdkConfigRepository {
     @Override
     public void create(boolean global, String version) {
         baseLayout.ensureBaseDirectory(global);
+
+        if (Files.exists(baseLayout.configFile(global))) {
+            throw new ConfigFileAlreadyExistsException();
+        }
+
         update(global, version);
     }
 
