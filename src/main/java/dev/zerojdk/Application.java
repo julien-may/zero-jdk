@@ -18,8 +18,8 @@ import dev.zerojdk.adapter.out.catalog.storage.download.HttpCatalogDownloadServi
 import dev.zerojdk.adapter.out.catalog.JsonCatalogRepository;
 import dev.zerojdk.adapter.out.catalog.provider.CatalogStorageProvider;
 import dev.zerojdk.adapter.out.catalog.provider.JsonCatalogStorageProvider;
-import dev.zerojdk.adapter.out.catalog.storage.download.client.DefaultGitHubReleaseClient;
-import dev.zerojdk.adapter.out.catalog.storage.download.client.GitHubReleaseClient;
+import dev.zerojdk.adapter.out.github.client.DefaultGitHubReleaseClient;
+import dev.zerojdk.adapter.out.github.client.GitHubReleaseClient;
 import dev.zerojdk.adapter.out.config.FsJdkConfigRepository;
 import dev.zerojdk.adapter.out.download.HttpDownloadService;
 import dev.zerojdk.adapter.out.event.InMemoryDomainEventPublisher;
@@ -82,11 +82,13 @@ public class Application implements Runnable {
         // Event Management
         InMemoryDomainEventPublisher domainEventPublisher = new InMemoryDomainEventPublisher();
 
+        // GitHub Client
+        GitHubReleaseClient gitHubReleaseClient = new DefaultGitHubReleaseClient(downloadService);
+
         // Catalog Storage setup
         CatalogStorageLayout catalogStorageLayout = new FsCatalogStorageLayout(baseLayout);
         CatalogStorageMetadataRepository catalogStorageMetadataRepository = new FsCatalogStorageMetadataRepository(catalogStorageLayout);
 
-        GitHubReleaseClient gitHubReleaseClient = new DefaultGitHubReleaseClient(downloadService);
         CatalogDownloadService catalogDownloadService = new HttpCatalogDownloadService(gitHubReleaseClient, unarchiverFactory);
         CatalogStorageService catalogStorageService = new CatalogStorageService(catalogDownloadService, catalogStorageMetadataRepository);
         CatalogStorageProvider catalogStorageProvider = new JsonCatalogStorageProvider(catalogStorageService);
@@ -113,7 +115,7 @@ public class Application implements Runnable {
         WrapperLayout wrapperLayout = new FsWrapperLayout(baseLayout);
         WrapperConfigRepository wrapperConfigRepository = new FsWrapperConfigRepository(wrapperLayout);
         WrapperScriptRepository wrapperScriptRepository = new FsWrapperScriptRepository(wrapperLayout);
-        WrapperReleaseLocator wrapperReleaseLocator = new WrapperReleaseLocatorAdapter();
+        WrapperReleaseLocator wrapperReleaseLocator = new WrapperReleaseLocatorAdapter(gitHubReleaseClient);
         WrapperScriptGenerator wrapperScriptGenerator = new WrapperScriptGenerator(baseLayout, wrapperLayout);
         WrapperInstaller wrapperInstaller = new WrapperInstaller(wrapperConfigRepository, wrapperScriptRepository, wrapperReleaseLocator, wrapperScriptGenerator);
 

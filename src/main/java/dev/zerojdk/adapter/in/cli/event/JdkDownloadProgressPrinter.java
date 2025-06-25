@@ -1,7 +1,6 @@
 package dev.zerojdk.adapter.in.cli.event;
 
 import dev.zerojdk.domain.port.out.event.DomainEventObserver;
-import dev.zerojdk.domain.service.release.events.JdkDownloadCompleted;
 import dev.zerojdk.domain.service.release.events.JdkDownloadProgress;
 import dev.zerojdk.domain.service.release.events.JdkDownloadStarted;
 
@@ -26,8 +25,5 @@ public class JdkDownloadProgressPrinter implements ConsoleEventHandler {
                 System.out.println();
             }
         });
-
-        observer.register(JdkDownloadCompleted.class, e ->
-            System.out.println("done"));
     }
 }

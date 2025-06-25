@@ -1,27 +1,20 @@
 package dev.zerojdk.adapter.out.wrapper;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import dev.zerojdk.adapter.out.github.client.GitHubReleaseClient;
+import dev.zerojdk.adapter.out.github.client.model.Asset;
+import dev.zerojdk.adapter.out.github.client.model.Release;
 import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.port.out.wrapper.WrapperReleaseLocator;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
 import java.io.*;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-import java.util.List;
 
 @RequiredArgsConstructor
 public class WrapperReleaseLocatorAdapter implements WrapperReleaseLocator {
     private static final String REPO = "julien-may/zero-jdk";
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
-        .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+    private final GitHubReleaseClient gitHubReleaseClient;
 
     @Override
     public String findLatestUrl(Platform platform) {
@@ -40,35 +33,13 @@ public class WrapperReleaseLocatorAdapter implements WrapperReleaseLocator {
     }
 
     @SneakyThrows
-    private static String resolveGitHubLatest(String platform) {
-        HttpClient.Builder httpClientbuilder = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10));
+    private String resolveGitHubLatest(String platform) {
+        Release latestRelease = gitHubReleaseClient.getLatestRelease(REPO);
 
-        try (HttpClient client = httpClientbuilder.build()) {
-            HttpRequest req = HttpRequest.newBuilder(URI.create("https://api.github.com/repos/" + REPO + "/releases/latest"))
-                .header("Accept", "application/vnd.github+json")
-                .build();
-
-            var res = client.send(req, HttpResponse.BodyHandlers.ofString());
-
-            if (res.statusCode() != 200) {
-                throw new IOException("GitHub API status " + res.statusCode());
-            }
-
-            Release release = OBJECT_MAPPER.readValue(res.body(), Release.class);
-
-            return release.assets().stream()
-                .map(Asset::browserDownloadUrl)
-                .filter(u -> u.contains(platform))
-                .findFirst()
-                .orElseThrow(() -> new IOException("No asset for " + platform));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException("GitHub request interrupted", e);
-        }
+        return latestRelease.assets().stream()
+            .map(Asset::browserDownloadUrl)
+            .filter(u -> u.contains(platform))
+            .findFirst()
+            .orElseThrow(() -> new IOException("No asset for " + platform));
     }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record Release(List<Asset> assets) {}
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record Asset(String browserDownloadUrl) {}
 }

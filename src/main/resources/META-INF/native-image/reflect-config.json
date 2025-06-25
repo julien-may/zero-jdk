@@ -10,13 +10,13 @@
     "allPublicConstructors": true
   },
   {
-    "name": "dev.zerojdk.adapter.out.catalog.HttpCatalogDownloadService$Release",
+    "name": "dev.zerojdk.adapter.out.github.client.model.Asset",
     "allPublicConstructors": true,
     "allPublicMethods": true,
     "allPublicFields": true
   },
   {
-    "name": "dev.zerojdk.adapter.out.catalog.HttpCatalogDownloadService$Asset",
+    "name": "dev.zerojdk.adapter.out.github.client.model.Release",
     "allPublicConstructors": true,
     "allPublicMethods": true,
     "allPublicFields": true

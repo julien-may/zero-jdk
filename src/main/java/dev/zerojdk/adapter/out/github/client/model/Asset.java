@@ -1,4 +1,4 @@
-package dev.zerojdk.adapter.out.catalog.storage.download.client;
+package dev.zerojdk.adapter.out.github.client.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

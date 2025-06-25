@@ -1,8 +1,8 @@
 package dev.zerojdk.adapter.out.catalog.storage.download;
 
-import dev.zerojdk.adapter.out.catalog.storage.download.client.Asset;
-import dev.zerojdk.adapter.out.catalog.storage.download.client.GitHubReleaseClient;
-import dev.zerojdk.adapter.out.catalog.storage.download.client.Release;
+import dev.zerojdk.adapter.out.github.client.model.Asset;
+import dev.zerojdk.adapter.out.github.client.GitHubReleaseClient;
+import dev.zerojdk.adapter.out.github.client.model.Release;
 import dev.zerojdk.domain.model.catalog.Catalog;
 import dev.zerojdk.domain.port.out.catalog.CatalogDownloadService;
 import dev.zerojdk.domain.port.out.unarchiving.Unarchiver;
