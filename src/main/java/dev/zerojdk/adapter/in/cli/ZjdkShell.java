@@ -2,7 +2,6 @@ package dev.zerojdk.adapter.in.cli;
 
 import dev.zerojdk.domain.service.shell.ShellExtensionWriter;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import picocli.CommandLine;
 
 import java.nio.file.Path;
@@ -21,7 +20,6 @@ public class ZjdkShell {
         public static class Zsh implements Runnable {
             private final ShellExtensionWriter shellExtensionWriter;
 
-            @SneakyThrows
             @Override
             public void run() {
                 Path path = shellExtensionWriter.writeZshIntegrationScript();

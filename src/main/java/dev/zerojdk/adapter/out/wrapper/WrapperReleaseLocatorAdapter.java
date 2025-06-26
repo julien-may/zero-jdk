@@ -6,9 +6,6 @@ import dev.zerojdk.adapter.out.github.client.model.Release;
 import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.port.out.wrapper.WrapperReleaseLocator;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-
-import java.io.*;
 
 @RequiredArgsConstructor
 public class WrapperReleaseLocatorAdapter implements WrapperReleaseLocator {
@@ -32,7 +29,6 @@ public class WrapperReleaseLocatorAdapter implements WrapperReleaseLocator {
         return resolveGitHubLatest(os + "-" + arch);
     }
 
-    @SneakyThrows
     private String resolveGitHubLatest(String platform) {
         Release latestRelease = gitHubReleaseClient.getLatestRelease(REPO);
 
@@ -40,6 +36,6 @@ public class WrapperReleaseLocatorAdapter implements WrapperReleaseLocator {
             .map(Asset::browserDownloadUrl)
             .filter(u -> u.contains(platform))
             .findFirst()
-            .orElseThrow(() -> new IOException("No asset for " + platform));
+            .orElseThrow(() -> new RuntimeException("No asset for " + platform));
     }
 }

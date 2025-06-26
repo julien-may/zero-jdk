@@ -3,13 +3,11 @@ package dev.zerojdk.adapter.out.catalog.provider;
 import dev.zerojdk.domain.model.catalog.storage.CatalogStorage;
 import dev.zerojdk.domain.service.catalog.CatalogStorageService;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 
 @RequiredArgsConstructor
 public class JsonCatalogStorageProvider implements CatalogStorageProvider {
     private final CatalogStorageService catalogStorageService;
 
-    @SneakyThrows
     @Override
     public CatalogStorage provide() {
         return catalogStorageService.bootstrapIfMissing();

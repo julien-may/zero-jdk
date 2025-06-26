@@ -15,6 +15,7 @@ import dev.zerojdk.domain.service.release.events.JdkDownloadProgress;
 import dev.zerojdk.domain.service.release.events.JdkDownloadStarted;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -42,11 +43,18 @@ public class JdkReleaseService {
                 publisher.publish(new JdkDownloadProgress(version, bytesRead, totalBytes)));
         publisher.publish(new JdkDownloadCompleted(version));
 
-        Path extracted = unarchiverFactory.create(downloadedFile)
-            .extract(jdkReleaseLayout.ensureReleaseDirectory()
-                .resolve(version.getIdentifier()));
+        Path extracted = null;
 
-        jdkInstaller.install(version, extracted);
+        try {
+            extracted = unarchiverFactory.create(downloadedFile)
+                .extract(jdkReleaseLayout.tempDirectory(version));
+
+            jdkInstaller.install(version, extracted);
+        } catch (Exception ex) {
+            if (extracted != null) {
+                FileUtils.deleteDirectory(extracted.toFile());
+            }
+        }
     }
 
     public Optional<JdkRelease> findJdkRelease(Platform platform, String identifier) {

@@ -6,5 +6,5 @@ import dev.zerojdk.domain.model.JdkVersion;
 import java.nio.file.Path;
 
 public interface JdkInstaller {
-    InstallationRecord install(JdkVersion version, Path extractedDir);
+    InstallationRecord install(JdkVersion version, Path jdk);
 }

@@ -1,7 +1,6 @@
 package dev.zerojdk.adapter.out.download;
 
 import dev.zerojdk.domain.port.out.download.DownloadService;
-import lombok.SneakyThrows;
 
 import java.io.*;
 import java.net.URI;
@@ -17,13 +16,12 @@ public class HttpDownloadService implements DownloadService {
     private static final int BUFFER_SIZE = 8192;
 
     @Override
-    public File download(String uri) {
+    public File download(String uri) throws IOException, InterruptedException {
         return download(uri, null);
     }
 
-    @SneakyThrows
     @Override
-    public File download(String uri, ProgressListener progressListener) {
+    public File download(String uri, ProgressListener progressListener) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(URI.create(uri)).build();
         HttpClient.Builder httpClientBuilder = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL);
@@ -46,12 +44,13 @@ public class HttpDownloadService implements DownloadService {
             Files.move(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
 
             return targetFile.toFile();
+        } catch (InterruptedException | IOException e) {
+            Files.deleteIfExists(tempFile);
+            throw e;
         }
     }
 
-    @SneakyThrows
-    private void writeToFile(InputStream input, Path outputPath, long totalBytes, ProgressListener progressListener) {
-
+    private void writeToFile(InputStream input, Path outputPath, long totalBytes, ProgressListener progressListener) throws IOException {
         try (InputStream in = input;
              OutputStream out = Files.newOutputStream(outputPath, StandardOpenOption.WRITE)) {
 

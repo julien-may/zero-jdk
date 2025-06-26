@@ -6,7 +6,6 @@ import dev.zerojdk.domain.port.out.wrapper.WrapperReleaseLocator;
 import dev.zerojdk.domain.port.out.wrapper.WrapperConfigRepository;
 import dev.zerojdk.domain.port.out.wrapper.WrapperScriptRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 
 @RequiredArgsConstructor
 public class WrapperInstaller {
@@ -14,17 +13,18 @@ public class WrapperInstaller {
     private final WrapperScriptRepository wrapperScriptRepository;
     private final WrapperReleaseLocator wrapperReleaseLocator;
     private final WrapperScriptGenerator wrapperScriptGenerator;
+    private final BinaryInstaller binaryInstaller;
 
-    @SneakyThrows
     public void install(Platform platform) {
+        // TODO: The wrapper.properties version/url must be in sync with the binary version
+
         WrapperConfig wrapperConfig = wrapperConfigRepository.read()
             .orElseGet(() -> wrapperConfigRepository.write(
                 new WrapperConfig(wrapperReleaseLocator.findLatestUrl(platform))));
 
-        // TODO: instead of only creating the script we should also copy the version of zjdk that is currently
-        //  being executed into the directory
-
         wrapperScriptRepository.save(
             wrapperScriptGenerator.generateScript(wrapperConfig.url()));
+
+        binaryInstaller.install();
     }
 }

@@ -45,6 +45,7 @@ public class DefaultGitHubReleaseClient implements GitHubReleaseClient {
     }
 
     @Override
+    @SneakyThrows
     public File downloadReleaseAsset(Asset asset) {
         return downloadService.download(asset.browserDownloadUrl());
     }

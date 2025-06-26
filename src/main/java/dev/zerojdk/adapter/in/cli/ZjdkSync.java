@@ -7,7 +7,6 @@ import dev.zerojdk.domain.model.Platform;
 import dev.zerojdk.domain.port.out.PlatformDetection;
 import dev.zerojdk.domain.service.sync.ManifestSyncService;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import picocli.CommandLine;
 
 @RequiredArgsConstructor
@@ -20,7 +19,6 @@ public class ZjdkSync implements Runnable {
     @CommandLine.Option(names = {"--global"}, description = "Sync globally")
     private boolean global;
 
-    @SneakyThrows
     @Override
     public void run() {
         new CompositeConsoleEventHandler(

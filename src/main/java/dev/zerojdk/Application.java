@@ -44,6 +44,7 @@ import dev.zerojdk.domain.service.config.UnsupportedIdentifierException;
 import dev.zerojdk.domain.service.release.JdkReleaseService;
 import dev.zerojdk.domain.service.shell.ShellExtensionWriter;
 import dev.zerojdk.domain.service.sync.ManifestSyncService;
+import dev.zerojdk.domain.service.wrapper.BinaryInstaller;
 import dev.zerojdk.domain.service.wrapper.WrapperInstaller;
 import dev.zerojdk.domain.service.wrapper.WrapperScriptGenerator;
 import dev.zerojdk.infrastructure.VersionProvider;
@@ -97,7 +98,7 @@ public class Application implements Runnable {
         // Jdk Release
         JdkReleaseLayout jdkReleaseLayout = new FsJdkReleaseLayout(baseLayout);
         JdkRegistrationRepository jdkRegistrationRepository = new FsJdkRegistrationRepository(jdkReleaseLayout);
-        JdkInstaller jdkInstaller = new FsJdkInstaller(jdkRegistrationRepository);
+        JdkInstaller jdkInstaller = new FsJdkInstaller(jdkReleaseLayout, jdkRegistrationRepository);
         JdkReleaseService jdkReleaseService = new JdkReleaseService(domainEventPublisher, jdkReleaseLayout, downloadService,
             unarchiverFactory, catalogService, jdkRegistrationRepository, jdkInstaller);
 
@@ -110,7 +111,9 @@ public class Application implements Runnable {
         WrapperScriptRepository wrapperScriptRepository = new FsWrapperScriptRepository(wrapperLayout);
         WrapperReleaseLocator wrapperReleaseLocator = new WrapperReleaseLocatorAdapter(gitHubReleaseClient);
         WrapperScriptGenerator wrapperScriptGenerator = new WrapperScriptGenerator(baseLayout, wrapperLayout);
-        WrapperInstaller wrapperInstaller = new WrapperInstaller(wrapperConfigRepository, wrapperScriptRepository, wrapperReleaseLocator, wrapperScriptGenerator);
+        BinaryInstaller binaryInstaller = new BinaryInstaller(wrapperLayout);
+        WrapperInstaller wrapperInstaller = new WrapperInstaller(
+            wrapperConfigRepository, wrapperScriptRepository, wrapperReleaseLocator, wrapperScriptGenerator, binaryInstaller);
 
         // Shell Extensions
         ShellExtensionLayout shellExtensionLayout = new FsShellExtensionLayout(baseLayout);
