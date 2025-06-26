@@ -4,7 +4,7 @@ import dev.zerojdk.domain.model.catalog.Catalog;
 import dev.zerojdk.domain.service.catalog.CatalogUnchangedException;
 
 public interface CatalogDownloadService {
-    Catalog downloadLatest() throws CatalogUnchangedException;
+    Catalog downloadLatest();
 
     /**
      * Downloads and extracts the latest catalog if the currentVersion is older.
@@ -14,5 +14,5 @@ public interface CatalogDownloadService {
      * @return path to the downloaded catalog file (extracted)
      * @throws CatalogUnchangedException if the catalog is already up-to-date
      */
-    Catalog downloadLatestIfNewer(String currentVersion) throws CatalogUnchangedException;
+    Catalog downloadLatestIfNewer(String currentVersion);
 }

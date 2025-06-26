@@ -17,9 +17,9 @@ public class GzipUnarchiver implements Unarchiver {
     @SneakyThrows
     @Override
     public Path extract(Path target) {
-        try (FileInputStream fileInputStream = new FileInputStream(archive.toFile());
-             BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
-             InputStream inputStream = new GzipCompression().decompress(bufferedInputStream)) {
+        try (InputStream inputStream = new GzipCompression().decompress(
+            new BufferedInputStream(
+                new FileInputStream(archive.toFile())))) {
 
             Path targetFile = target.resolve(removeExtension(archive).getFileName());
 
@@ -32,14 +32,15 @@ public class GzipUnarchiver implements Unarchiver {
     }
 
     private Path removeExtension(Path path) {
-        int dotIndex = path.getFileName()
-            .toString()
-            .lastIndexOf('.');
+        String fileName = path.getFileName().toString();
+        int dotIndex = fileName.lastIndexOf('.');
 
-        return (dotIndex == -1)
-            ? path
-            : path.resolveSibling(path.getFileName()
-            .toString()
-            .substring(0, dotIndex));
+        // dotIndex == 0 handles hidden files
+        if (dotIndex == -1 || dotIndex == 0) {
+            return path;
+        }
+
+        return path.resolveSibling(
+            fileName.substring(0, dotIndex));
     }
 }

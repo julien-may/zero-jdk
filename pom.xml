@@ -14,12 +14,15 @@
 
         <jackson-bom.version>2.19.0</jackson-bom.version>
         <junit-bom.version>5.11.0</junit-bom.version>
+        <mockito-bom.version>5.18.0</mockito-bom.version>
 
         <picocli.version>4.7.7</picocli.version>
         <commons-compress.version>1.27.1</commons-compress.version>
 
         <lombok.version>1.18.38</lombok.version>
         <graal.version>24.0.1</graal.version>
+
+        <assertj.version>3.11.1</assertj.version>
 
         <native.maven.plugin.version>0.10.6</native.maven.plugin.version>
         <maven-compiler-plugin.version>3.12.1</maven-compiler-plugin.version>
@@ -39,6 +42,13 @@
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>
                 <version>${junit-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-bom</artifactId>
+                <version>${mockito-bom.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -84,6 +94,22 @@
             <artifactId>junit-jupiter-params</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>${assertj.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -109,6 +135,14 @@
                         <compilerArgs>
                             <arg>-Aproject=${project.groupId}/${project.artifactId}</arg>
                         </compilerArgs>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.5.3</version>
+                    <configuration>
+                        <argLine>-XX:+EnableDynamicAgentLoading</argLine>
                     </configuration>
                 </plugin>
                 <plugin>

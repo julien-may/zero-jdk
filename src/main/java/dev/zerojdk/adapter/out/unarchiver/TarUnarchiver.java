@@ -2,28 +2,35 @@ package dev.zerojdk.adapter.out.unarchiver;
 
 import dev.zerojdk.domain.port.out.unarchiving.Unarchiver;
 import dev.zerojdk.domain.port.out.unarchiving.compression.Compression;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
 import java.io.*;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 @RequiredArgsConstructor
 public class TarUnarchiver implements Unarchiver {
     private final Path archive;
+    @Getter
     private final Compression compression;
 
     @Override
     @SneakyThrows
     public Path extract(Path destination) {
-        String rootDirName = findCommonRootDirectory(archive.toFile());
+        String rootDirName = findCommonRootDirectory(archive.toFile(), compression);
+
         List<Runnable> deferredSymlinks = new ArrayList<>();
 
-        try (TarArchiveInputStream tar = openTarStream(archive)) {
+        try (TarArchiveInputStream tar = new TarArchiveInputStream(compression.decompress(
+            new BufferedInputStream(new FileInputStream(archive.toFile()))))) {
+
             TarArchiveEntry entry;
 
             while ((entry = tar.getNextEntry()) != null) {
@@ -41,8 +48,9 @@ public class TarUnarchiver implements Unarchiver {
 
                 if (entry.isDirectory()) {
                     Files.createDirectories(target);
+                    PosixPermissions.setPosixFilePermissions(target, entry.getMode());
                 } else if (entry.isSymbolicLink() || entry.isLink()) {
-                    deferredSymlinks.add(createLinkTask(entry, target, destination));
+                    deferredSymlinks.add(createLink(entry, target, destination));
                 } else {
                     extractFile(tar, entry, target);
                 }
@@ -53,29 +61,24 @@ public class TarUnarchiver implements Unarchiver {
         return destination;
     }
 
-    @SneakyThrows
-    private TarArchiveInputStream openTarStream(Path file) {
-        return new TarArchiveInputStream(compression.decompress(
-            new BufferedInputStream(new FileInputStream(file.toFile()))));
-    }
-
     private String normalizeEntryName(String name, String rootDirName) {
         if (rootDirName != null) {
             Path namePath = Path.of(name).normalize();
+            Path rootPath = Path.of(rootDirName);
 
-            if (namePath.equals(Path.of(rootDirName))) {
+            if (namePath.equals(rootPath)) {
                 return null;
             }
 
             if (namePath.startsWith(rootDirName + "/")) {
-                return Path.of(rootDirName).relativize(namePath).toString();
+                return rootPath.relativize(namePath).toString();
             }
         }
 
         return name;
     }
 
-    private Runnable createLinkTask(TarArchiveEntry entry, Path target, Path destination) {
+    private Runnable createLink(TarArchiveEntry entry, Path target, Path destination) {
         return () -> {
             try {
                 Files.createDirectories(target.getParent());
@@ -92,42 +95,57 @@ public class TarUnarchiver implements Unarchiver {
         };
     }
 
-    @SneakyThrows
-    private void extractFile(TarArchiveInputStream tar, TarArchiveEntry entry, Path target) {
+    private void extractFile(TarArchiveInputStream tar, TarArchiveEntry entry, Path target) throws IOException {
         Files.createDirectories(target.getParent());
-        Files.copy(tar, target, StandardCopyOption.REPLACE_EXISTING);
+
+        try (OutputStream outputStream = Files.newOutputStream(target)) {
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            long remaining = entry.getSize();
+
+            while (remaining > 0 && (bytesRead = tar.read(buffer, 0, (int) Math.min(buffer.length, remaining))) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+                remaining -= bytesRead;
+            }
+        }
 
         PosixPermissions.setPosixFilePermissions(target, entry.getMode());
     }
 
-    @SneakyThrows
-    private static String findCommonRootDirectory(File archive) {
-        try (TarArchiveInputStream tar = new TarArchiveInputStream(new GzipCompressorInputStream(
+    private String findCommonRootDirectory(File archive, Compression compression) throws IOException {
+        String commonRootDirectory = null;
+        boolean multipleTopLevelEntries = false;
+
+        try (TarArchiveInputStream tar = new TarArchiveInputStream(compression.decompress(
             new BufferedInputStream(new FileInputStream(archive))))) {
 
-            String commonRoot = null;
             TarArchiveEntry entry;
-
             while ((entry = tar.getNextEntry()) != null) {
                 String name = entry.getName();
-                if (name.startsWith("./")) {
-                    name = name.substring(2);
-                }
+                String topLevelEntry = name.split("/", 2)[0];
 
-                if (name.isEmpty()) {
-                    continue;
-                }
+                // Check if the current entry is a top-level directory itself
+                boolean isTopLevelDirectoryEntry = entry.isDirectory()
+                    && (name.equals(topLevelEntry) || name.equals(topLevelEntry + "/"));
 
-                String top = name.split("/", 2)[0];
-
-                if (commonRoot == null) {
-                    commonRoot = top;
-                } else if (!commonRoot.equals(top)) {
-                    return null;
+                if (commonRootDirectory == null) {
+                    if (isTopLevelDirectoryEntry) {
+                        commonRootDirectory = topLevelEntry;
+                    } else {
+                        multipleTopLevelEntries = true;
+                        break;
+                    }
+                } else {
+                    if (!commonRootDirectory.equals(topLevelEntry)) {
+                        multipleTopLevelEntries = true;
+                        break;
+                    }
                 }
             }
-
-            return commonRoot;
         }
+
+        return  multipleTopLevelEntries || commonRootDirectory == null
+            ? null
+            : commonRootDirectory;
     }
 }
