@@ -77,7 +77,6 @@ public class JsonCatalogRepository implements CatalogRepository {
             .findFirst();
     }
 
-
     @SneakyThrows
     private List<JdkVersion> readAll() {
         return MAPPER.readValue(catalogStorageProvider.provide().location().toFile(),
@@ -106,11 +105,12 @@ public class JsonCatalogRepository implements CatalogRepository {
                 case "linux" -> OperatingSystem.LINUX;
                 case "windows" -> OperatingSystem.WINDOWS;
                 case "macos" -> OperatingSystem.MACOS;
-                case "aix" -> OperatingSystem.AIX;
+                case "aix" -> OperatingSystem.AIX; // TODO: remove
                 default -> null;
             },
             switch (jsonJdkVersion.getArchitecture()) {
                 case "aarch64" -> ProcessorArchitecture.AARCH64;
+                case "x64" -> ProcessorArchitecture.X64;
                 default -> null;
             }
         ));

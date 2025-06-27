@@ -23,7 +23,7 @@ public class FsJdkReleaseLayout implements JdkReleaseLayout {
     @Override
     public Path ensureReleaseDirectory() {
         return Files.createDirectories(
-            baseLayout.baseDirectory(true)
+            baseLayout.ensureBaseDirectory(true)
                 .resolve("releases"));
     }
 }

@@ -37,30 +37,29 @@ public class FsBaseLayout implements BaseLayout {
     }
 
     @Override
-    public Path baseDirectory(boolean global) {
-        if (global) {
-            return createBaseDirectory(
-                Path.of(System.getProperty("user.home")));
-        }
-
-        return discoverProjectRoot()
-            .orElseThrow(UnmanagedDirectoryException::new)
-            .resolve(".zjdk");
-    }
-
-    @Override
     public Path configFile(boolean global) {
         return baseDirectory(global).resolve("config.properties");
     }
 
     @Override
-    public void ensureBaseDirectory(boolean global) {
+    public Path ensureBaseDirectory(boolean global) {
         if (global) {
-            createBaseDirectory(
+            return createBaseDirectory(
                 Path.of(System.getProperty("user.home")));
         } else {
-            createBaseDirectory(Path.of("."));
+            return createBaseDirectory(Path.of("."));
         }
+    }
+
+    private Path baseDirectory(boolean global) {
+        if (global) {
+            return Path.of(System.getProperty("user.home"))
+                .resolve(".zjdk");
+        }
+
+        return discoverProjectRoot()
+            .orElseThrow(UnmanagedDirectoryException::new)
+            .resolve(".zjdk");
     }
 
     @SneakyThrows

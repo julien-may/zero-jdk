@@ -6,7 +6,7 @@ import dev.zerojdk.domain.model.ProcessorArchitecture;
 import dev.zerojdk.domain.port.out.PlatformDetection;
 
 import static dev.zerojdk.domain.model.OperatingSystem.*;
-import static dev.zerojdk.domain.model.ProcessorArchitecture.AARCH64;
+import static dev.zerojdk.domain.model.ProcessorArchitecture.*;
 
 public class SystemPropertyBasedPlatformDetection implements PlatformDetection {
     @Override
@@ -41,6 +41,10 @@ public class SystemPropertyBasedPlatformDetection implements PlatformDetection {
 
         if (architecture.contains("aarch64")) {
             return AARCH64;
+        }
+
+        if (architecture.contains("x86_64") || architecture.contains("amd64")) {
+            return X64;
         }
 
         throw new UnsupportedOperationException("Processor architecture not supported: " + architecture);

@@ -19,7 +19,7 @@ public class FsShellExtensionLayout implements ShellExtensionLayout {
 
     @SneakyThrows
     private Path ensureDirectoryExists() {
-        return Files.createDirectories(baseLayout.baseDirectory(true)
+        return Files.createDirectories(baseLayout.ensureBaseDirectory(true)
             .resolve("extensions"));
     }
 }

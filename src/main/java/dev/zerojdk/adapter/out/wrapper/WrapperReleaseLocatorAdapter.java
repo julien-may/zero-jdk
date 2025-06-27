@@ -24,6 +24,7 @@ public class WrapperReleaseLocatorAdapter implements WrapperReleaseLocator {
 
         String arch = switch (platform.arch()) {
             case AARCH64 -> "arm64";
+            case X64 -> "x64";
         };
 
         return resolveGitHubLatest(os + "-" + arch);

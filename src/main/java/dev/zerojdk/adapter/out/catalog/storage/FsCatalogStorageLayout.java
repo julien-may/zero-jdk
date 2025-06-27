@@ -26,7 +26,7 @@ public class FsCatalogStorageLayout implements CatalogStorageLayout {
 
     @SneakyThrows
     private Path ensureCatalogDirectory() {
-        return Files.createDirectories(baseLayout.baseDirectory(true)
+        return Files.createDirectories(baseLayout.ensureBaseDirectory(true)
             .resolve("catalog"));
     }
 }

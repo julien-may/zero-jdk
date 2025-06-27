@@ -15,7 +15,7 @@ public class FsWrapperLayout implements WrapperLayout {
     @SneakyThrows
     @Override
     public Path ensureWrapperDirectory() {
-        return Files.createDirectories(baseLayout.baseDirectory(false)
+        return Files.createDirectories(baseLayout.ensureBaseDirectory(false)
             .resolve("wrapper"));
     }
 
