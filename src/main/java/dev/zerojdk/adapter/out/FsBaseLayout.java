@@ -42,16 +42,7 @@ public class FsBaseLayout implements BaseLayout {
     }
 
     @Override
-    public Path ensureBaseDirectory(boolean global) {
-        if (global) {
-            return createBaseDirectory(
-                Path.of(System.getProperty("user.home")));
-        } else {
-            return createBaseDirectory(Path.of("."));
-        }
-    }
-
-    private Path baseDirectory(boolean global) {
+    public Path baseDirectory(boolean global) {
         if (global) {
             return Path.of(System.getProperty("user.home"))
                 .resolve(".zjdk");
@@ -60,6 +51,16 @@ public class FsBaseLayout implements BaseLayout {
         return discoverProjectRoot()
             .orElseThrow(UnmanagedDirectoryException::new)
             .resolve(".zjdk");
+    }
+
+    @Override
+    public Path ensureBaseDirectory(boolean global) {
+        if (global) {
+            return createBaseDirectory(
+                Path.of(System.getProperty("user.home")));
+        } else {
+            return createBaseDirectory(Path.of("."));
+        }
     }
 
     @SneakyThrows

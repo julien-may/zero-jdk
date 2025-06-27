@@ -26,7 +26,6 @@ class GzipUnarchiverTest {
         "foo.text.gz, foo.text",
         ".foo.gz, .foo"
     })
-    @DisplayName("should extract a .gz file correctly")
     void shouldExtractGzFileCorrectly(Path archiveName, String extractedName) throws IOException {
         // Given
         String content = "This is a test string for GzipUnarchiver.";

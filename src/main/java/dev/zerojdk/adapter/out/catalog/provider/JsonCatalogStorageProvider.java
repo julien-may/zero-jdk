@@ -10,6 +10,7 @@ public class JsonCatalogStorageProvider implements CatalogStorageProvider {
 
     @Override
     public CatalogStorage provide() {
-        return catalogStorageService.bootstrapIfMissing();
+        return catalogStorageService.findCatalogStorage()
+            .orElseGet(catalogStorageService::updateCatalog);
     }
 }

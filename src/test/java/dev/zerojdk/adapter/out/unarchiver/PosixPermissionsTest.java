@@ -52,7 +52,6 @@ class PosixPermissionsTest {
 
     @ParameterizedTest
     @MethodSource("providePermissionsData")
-    @DisplayName("should convert integer mode to PosixFilePermission set correctly")
     void toPosixPermissions(int mode, Set<PosixFilePermission> expectedPermissions) {
         // When
         Set<PosixFilePermission> actualPermissions = PosixPermissions.toPosixPermissions(mode);
@@ -62,8 +61,7 @@ class PosixPermissionsTest {
     }
 
     @Test
-    @DisplayName("should not set POSIX file permissions when not supported")
-    void setPosixFilePermissions_shouldNotSetPermissionsWhenNotSupported() {
+    void setPosixFilePermissionsShouldNotSetPermissionsWhenNotSupported() {
         // Given
         Path mockPath = mock(Path.class);
         FileStore mockFileStore = mock(FileStore.class);

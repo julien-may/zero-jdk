@@ -79,6 +79,7 @@ public class JsonCatalogRepository implements CatalogRepository {
 
     @SneakyThrows
     private List<JdkVersion> readAll() {
+        // TODO: handle exception when provided storage does not exist
         return MAPPER.readValue(catalogStorageProvider.provide().location().toFile(),
                 new TypeReference<List<JsonJdkVersion>>() {}).stream()
             .map(this::map)

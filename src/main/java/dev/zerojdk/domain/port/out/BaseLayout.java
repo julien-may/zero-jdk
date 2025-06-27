@@ -8,5 +8,7 @@ public interface BaseLayout {
 
     Path configFile(boolean global);
 
+    Path baseDirectory(boolean global);
+
     Path ensureBaseDirectory(boolean global);
 }

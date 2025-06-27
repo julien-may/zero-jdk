@@ -5,6 +5,7 @@ import dev.zerojdk.domain.port.out.catalog.CatalogStorageLayout;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -14,19 +15,24 @@ public class FsCatalogStorageLayout implements CatalogStorageLayout {
 
     @Override
     public Path metadataFile() {
-        return ensureCatalogDirectory()
+        return catalogStorageDirectory()
             .resolve("catalog.properties");
     }
 
     @Override
     public Path catalogFile() {
-        return ensureCatalogDirectory()
+        return catalogStorageDirectory()
             .resolve("catalog.json");
     }
 
-    @SneakyThrows
-    private Path ensureCatalogDirectory() {
+    @Override
+    public Path ensureCatalogStorageDirectory() throws IOException {
         return Files.createDirectories(baseLayout.ensureBaseDirectory(true)
             .resolve("catalog"));
+    }
+
+    private Path catalogStorageDirectory() {
+        return baseLayout.baseDirectory(true)
+            .resolve("catalog");
     }
 }

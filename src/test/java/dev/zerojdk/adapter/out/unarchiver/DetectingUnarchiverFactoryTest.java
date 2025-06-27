@@ -35,7 +35,6 @@ class DetectingUnarchiverFactoryTest {
     }
 
     @ParameterizedTest
-    @MethodSource("provideTarUnarchiverArguments")
     void shouldReturnTarUnarchiver(String fileExtension, Class<? extends Compression> compressionType) {
         // Given
         File archive = tempDir.resolve("test." + fileExtension).toFile();
@@ -54,7 +53,6 @@ class DetectingUnarchiverFactoryTest {
     }
 
     @Test
-    @DisplayName("should return GzipUnarchiver for .gz file")
     void shouldReturnGzipUnarchiverForGz() throws IOException {
         // Given
         File archive = tempDir.resolve("test.gz").toFile();
@@ -69,7 +67,6 @@ class DetectingUnarchiverFactoryTest {
     }
 
     @Test
-    @DisplayName("should throw UnsupportedArchiveException for unsupported file type")
     void shouldThrowUnsupportedArchiveExceptionForUnsupportedFileType() throws IOException {
         // Given
         File archive = tempDir.resolve("test.zip").toFile();

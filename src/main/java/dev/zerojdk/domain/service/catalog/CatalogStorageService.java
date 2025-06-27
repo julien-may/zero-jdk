@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 public class CatalogStorageService {
@@ -27,10 +28,8 @@ public class CatalogStorageService {
             .orElseGet(this::updateCatalog);
     }
 
-    public CatalogStorage bootstrapIfMissing() {
-        return metadataRepository.getCurrentVersion()
-            .filter(meta -> Files.exists(meta.location()))
-            .orElseGet(this::updateCatalog);
+    public Optional<CatalogStorage> findCatalogStorage() {
+        return metadataRepository.getCurrentVersion();
     }
 
     private CatalogStorage updateCatalogIfNewer(String currentVersion) {

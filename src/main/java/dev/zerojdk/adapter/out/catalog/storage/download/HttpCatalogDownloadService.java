@@ -52,6 +52,11 @@ public class HttpCatalogDownloadService implements CatalogDownloadService {
         Path tempExtractDir = Files.createTempDirectory("catalog-extract-");
         Path extracted = unarchiver.extract(tempExtractDir);
 
+        if (!extracted.toFile().isFile()) {
+            // TODO: proper exception
+            throw new RuntimeException(String.format("Extracted file %s is not a file", extracted.toAbsolutePath()));
+        }
+
         return new Catalog(latestRelease.tagName(), extracted);
     }
 }

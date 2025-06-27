@@ -7,7 +7,6 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockedStatic;
@@ -41,7 +40,6 @@ class TarUnarchiverTest {
     }
 
     @Test
-    @DisplayName("should extract files from a .tar.gz archive")
     void shouldExtractFromCompressedArchive() throws IOException {
         // Given
         ArchiveEntry file1 = ArchiveEntry.file("file1.txt", "Content of file 1");
@@ -67,7 +65,6 @@ class TarUnarchiverTest {
     }
 
     @Test
-    @DisplayName("should extract files from a .tar archive")
     void shouldExtractFilesFromUncompressedArchive() throws IOException {
         // Given
         ArchiveEntry file1 = ArchiveEntry.file("file1.txt", "Content of file 1");
@@ -89,7 +86,6 @@ class TarUnarchiverTest {
     }
 
     @Test
-    @DisplayName("should extract files from a .tar.gz archive with nested directories")
     void shouldExtractFilesFromTarGzWithNestedDirectories() throws IOException {
         // Given
         Path archivePath = createTarArchive(true,
@@ -114,7 +110,6 @@ class TarUnarchiverTest {
     }
 
     @Test
-    @DisplayName("should handle archive with no common root directory")
     void shouldHandleArchiveWithNoCommonRootDirectory() throws IOException {
         // Given
         ArchiveEntry file1 = ArchiveEntry.file("file1.txt", "Content of file 1");

@@ -40,9 +40,9 @@ public class FsCatalogStorageMetadataRepository implements CatalogStorageMetadat
         Properties props = new Properties();
         props.setProperty("version", version);
 
-        Path metadataFile = catalogStorageLayout.metadataFile();
+        catalogStorageLayout.ensureCatalogStorageDirectory();
 
-        try (var out = Files.newOutputStream(metadataFile)) {
+        try (var out = Files.newOutputStream(catalogStorageLayout.metadataFile())) {
             props.store(out, "Catalog metadata");
         }
 
