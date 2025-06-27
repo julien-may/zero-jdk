@@ -22,7 +22,7 @@ public class JdkConfigService {
         catalogService.findByIdentifier(platform, version)
             .orElseThrow(() -> new UnsupportedIdentifierException(version));
 
-        jdkConfigRepository.update(global, version);
+        jdkConfigRepository.update(version, global);
     }
 
     public void createConfiguration(Platform platform, String version, boolean global) {
@@ -31,11 +31,12 @@ public class JdkConfigService {
                 .filter(jdkVersion -> jdkVersion.getSupport() == JdkVersion.Support.LTS)
                 .map(JdkVersion::getIdentifier)
                 .findFirst()
+                // TODO: proper exception
                 .orElseThrow(() -> new RuntimeException("There was an issue resolving the default version")));
 
         catalogService.findByIdentifier(platform, identifier)
             .orElseThrow(() -> new UnsupportedIdentifierException(identifier));
 
-        jdkConfigRepository.create(global, identifier);
+        jdkConfigRepository.create(identifier, global);
     }
 }
