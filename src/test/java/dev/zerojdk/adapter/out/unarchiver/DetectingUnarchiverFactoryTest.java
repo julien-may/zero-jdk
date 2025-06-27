@@ -35,6 +35,7 @@ class DetectingUnarchiverFactoryTest {
     }
 
     @ParameterizedTest
+    @MethodSource("provideTarUnarchiverArguments")
     void shouldReturnTarUnarchiver(String fileExtension, Class<? extends Compression> compressionType) {
         // Given
         File archive = tempDir.resolve("test." + fileExtension).toFile();

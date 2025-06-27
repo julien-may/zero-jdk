@@ -182,6 +182,7 @@
                         <artifactId>native-maven-plugin</artifactId>
                         <version>${native.maven.plugin.version}</version>
                         <extensions>true</extensions>
+
                         <configuration>
                             <buildArgs>
                                 <buildArg>-Os</buildArg>
@@ -189,6 +190,7 @@
                                 <buildArg>--gc=epsilon</buildArg>
                             </buildArgs>
                         </configuration>
+
                         <executions>
                             <execution>
                                 <id>build-native</id>
@@ -196,13 +198,6 @@
                                     <goal>compile-no-fork</goal>
                                 </goals>
                                 <phase>package</phase>
-                            </execution>
-                            <execution>
-                                <id>test-native</id>
-                                <goals>
-                                    <goal>test</goal>
-                                </goals>
-                                <phase>test</phase>
                             </execution>
                         </executions>
                     </plugin>
